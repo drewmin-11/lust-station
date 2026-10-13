@@ -111,6 +111,13 @@ public sealed partial class SoundAnomalySystem : EntitySystem
     /// </summary>
     private TimeSpan _globalRadioBlackoutUntil = TimeSpan.Zero;
 
+    /// <summary>
+    /// Аккумулятор времени для периодического обновления логики аномалии вместо выполнения каждый кадр.
+    /// </summary>
+    private float _updateAccumulator;
+
+    private const float UpdateInterval = 0.5f;
+
     /// <inheritdoc/>
     public override void Initialize()
     {
@@ -140,6 +147,7 @@ public sealed partial class SoundAnomalySystem : EntitySystem
     {
         _latestAnomalyRecords.Clear();
         _globalRadioBlackoutUntil = TimeSpan.Zero;
+        _updateAccumulator = 0f;
     }
 
     /// <summary>
@@ -536,6 +544,13 @@ public sealed partial class SoundAnomalySystem : EntitySystem
     {
         base.Update(frameTime);
 
+        _updateAccumulator += frameTime;
+        if (_updateAccumulator < UpdateInterval)
+            return;
+
+        var elapsed = _updateAccumulator;
+        _updateAccumulator = 0f;
+
         var curTime = _timing.CurTime;
 
         // Очистка истекших перегруженных радиоустройств
@@ -556,7 +571,7 @@ public sealed partial class SoundAnomalySystem : EntitySystem
             var range = sound.PulseRadius * 2.0f;
             activeAnomalyPositions.Add((xform.Coordinates, sound.PulseRadius));
 
-            var entities = _lookup.GetEntitiesInRange(uid, range, LookupFlags.Dynamic | LookupFlags.Sundries);
+            var entities = _lookup.GetEntitiesInRange(uid, range, LookupFlags.Dynamic);
             var hasAudience = false;
             foreach (var ent in entities)
             {
@@ -602,7 +617,7 @@ public sealed partial class SoundAnomalySystem : EntitySystem
                     _popup.PopupEntity(Loc.GetString("sound-anomaly-dormant"), uid, PopupType.Small);
                 }
 
-                _anomaly.ChangeAnomalyStability(uid, -sound.SilenceStabilityDecayRate * frameTime, anom);
+                _anomaly.ChangeAnomalyStability(uid, -sound.SilenceStabilityDecayRate * elapsed, anom);
             }
             else
             {
