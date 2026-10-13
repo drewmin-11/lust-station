@@ -1,1 +1,1 @@
-blind-in-storage-blinded = В сумке слишком темно, вы ничего не видите!
+blind-in-storage-blinded = Здесь слишком темно, вы ничего не видите!

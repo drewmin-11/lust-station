@@ -37,7 +37,7 @@ public sealed partial class BlindInStorageSystem : EntitySystem
         _blindable.UpdateIsBlind(ent.Owner);
 
         // Персональное уведомление для игрока
-        _popup.PopupClient(Loc.GetString("blind-in-storage-blinded"), ent.Owner, ent.Owner);
+        _popup.PopupEntity(Loc.GetString("blind-in-storage-blinded"), ent.Owner, ent.Owner);
     }
 
     private void OnGotRemoved(Entity<BlindInStorageComponent> ent, ref EntGotRemovedFromContainerMessage args)
