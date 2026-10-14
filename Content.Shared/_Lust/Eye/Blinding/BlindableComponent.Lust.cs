@@ -1,5 +1,7 @@
 // Lust added start - Слепота внутри хранилищ предметов
-#pragma warning disable IDE0130 // Пространство имён не соответствует структуре папок
+
+using Content.Shared.Eye.Blinding.Systems;
+
 namespace Content.Shared.Eye.Blinding.Components;
 
 public sealed partial class BlindableComponent
@@ -7,8 +9,7 @@ public sealed partial class BlindableComponent
     /// <summary>
     /// Находится ли существо в данный момент внутри предмета-хранилища (StorageComponent).
     /// </summary>
-    [ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
-    [Access(Other = AccessPermissions.ReadWriteExecute)]
+    [ViewVariables(VVAccess.ReadOnly), AutoNetworkedField]
     public bool InStorage;
 }
 // Lust added end
