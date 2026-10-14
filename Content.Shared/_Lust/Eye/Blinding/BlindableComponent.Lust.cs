@@ -9,7 +9,7 @@ public sealed partial class BlindableComponent
     /// <summary>
     /// Находится ли существо в данный момент внутри предмета-хранилища (StorageComponent).
     /// </summary>
-    [ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
+    [ViewVariables, AutoNetworkedField]
     public bool InStorage;
 }
 // Lust added end
