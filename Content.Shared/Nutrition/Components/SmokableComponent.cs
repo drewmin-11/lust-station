@@ -72,16 +72,16 @@ namespace Content.Shared.Nutrition.Components
         public float ForcedPuffDelay = 3.0f;
 
         /// <summary>
-        /// Звук шипения тлеющего табака при начале затяжки.
+        /// Звук глубокой затяжки тлеющим табаком при начале затяжки.
         /// </summary>
         [DataField("puffSound")]
-        public SoundSpecifier? PuffSound = new SoundPathSpecifier("/Audio/Effects/sizzle.ogg");
+        public SoundSpecifier? PuffSound = new SoundCollectionSpecifier("CigarettePuff");
 
         /// <summary>
         /// Звук выпуска дыма после затяжки.
         /// </summary>
         [DataField("exhaleSound")]
-        public SoundSpecifier? ExhaleSound = new SoundPathSpecifier("/Audio/Effects/smoke.ogg");
+        public SoundSpecifier? ExhaleSound;
         // Sunrise added end
     }
 }

@@ -8,11 +8,14 @@ using Content.Shared.Atmos;
 using Content.Shared.Body.Components;
 using Content.Shared.Chemistry;
 using Content.Shared.Chemistry.EntitySystems;
+using Content.Shared.Chemistry.Reagent;
 using Content.Shared.DoAfter;
 using Content.Shared.FixedPoint;
+using Content.Shared.Hands.EntitySystems;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
+using Content.Shared.Inventory;
 using Content.Shared.Nutrition.Components;
 using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
@@ -36,6 +39,8 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private PopupSystem _popup = default!;
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private IRobustRandom _random = default!;
+    [Dependency] private InventorySystem _inventory = default!;
+    [Dependency] private SharedHandsSystem _hands = default!;
 
     public override void Initialize()
     {
@@ -84,10 +89,38 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             return false;
         }
 
+        var isHeld = _hands.IsHolding(user, entity.Owner, out var hand);
+        var returnToHand = false;
+        string? handId = null;
+
+        // Проверяем, свободен ли рот / слот маски у цели
+        if (_inventory.TryGetSlotEntity(target, "mask", out var inMask))
+        {
+            // Слот маски занят чем-то отличным от нашей сигареты
+            if (inMask != entity.Owner)
+            {
+                _popup.PopupEntity(Loc.GetString("smoking-mouth-blocked"), user, user);
+                return false;
+            }
+            // Сигарета уже находится в слоте маски
+            returnToHand = false;
+        }
+        else if (isHeld)
+        {
+            // Слот маски свободен, а сигарета в руке — перемещаем сигарету в слот маски на время затяжки
+            if (!_inventory.TryEquip(user, target, entity.Owner, "mask", silent: true, force: true))
+            {
+                return false;
+            }
+
+            returnToHand = true;
+            handId = hand;
+        }
+
         var isSelf = (target == user);
         var delay = isSelf ? entity.Comp.PuffDelay : entity.Comp.ForcedPuffDelay;
 
-        // Звук шипения тлеющего табака
+        // Сочный звук тления углей и вдоха
         if (entity.Comp.PuffSound != null)
             _audio.PlayPvs(entity.Comp.PuffSound, entity.Owner);
 
@@ -103,11 +136,11 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _popup.PopupEntity(Loc.GetString("smoking-puff-start-user", ("target", targetName), ("item", entity.Owner)), user, user);
         }
 
-        var doAfterArgs = new DoAfterArgs(EntityManager, user, delay, new SmokablePuffDoAfterEvent(), entity.Owner, target: target, used: entity.Owner)
+        var doAfterArgs = new DoAfterArgs(EntityManager, user, delay, new SmokablePuffDoAfterEvent(returnToHand, handId), entity.Owner, target: target, used: entity.Owner)
         {
             BreakOnMove = false,
             BreakOnDamage = true,
-            NeedHand = true
+            NeedHand = false
         };
 
         return _doAfter.TryStartDoAfter(doAfterArgs);
@@ -149,17 +182,30 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     /// </summary>
     private void OnPuffDoAfter(Entity<SmokableComponent> entity, ref SmokablePuffDoAfterEvent args)
     {
-        if (args.Cancelled || args.Handled || args.Args.Target == null)
+        if (args.Handled || args.Args.Target == null)
             return;
 
         var target = args.Args.Target.Value;
         var user = args.Args.User;
 
-        if (entity.Comp.State != SmokableState.Lit)
+        // При отмене DoAfter (например игрок прервал или получил урон) возвращаем сигарету обратно в руку
+        if (args.Cancelled)
+        {
+            ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
             return;
+        }
+
+        if (entity.Comp.State != SmokableState.Lit)
+        {
+            ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
+            return;
+        }
 
         if (!_solution.TryGetSolution(entity.Owner, entity.Comp.Solution, out var soln, out var solution))
+        {
+            ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
             return;
+        }
 
         // 1. Отщепляем порцию раствора и вводим в кровоток цели
         var puffAmount = FixedPoint2.Min(entity.Comp.PuffAmount, solution.Volume);
@@ -184,7 +230,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _atmos.Merge(environment, merger);
         }
 
-        // 3. Звук выдоха дыма
+        // 3. Звук выдоха дыма (если задан)
         if (entity.Comp.ExhaleSound != null)
             _audio.PlayPvs(entity.Comp.ExhaleSound, target);
 
@@ -212,7 +258,32 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _popup.PopupEntity(Loc.GetString("smoking-puff-burnt-out", ("item", entity.Owner)), target, user);
         }
 
+        // 6. Возвращаем сигарету/окурок обратно в руку
+        ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
+
         args.Handled = true;
+    }
+
+    /// <summary>
+    /// Возвращает курительный предмет из слота маски обратно в руку пользователя.
+    /// </summary>
+    private void ReturnSmokableToHand(EntityUid smokable, EntityUid user, EntityUid target, bool returnToHand, string? handId)
+    {
+        if (!returnToHand)
+            return;
+
+        if (_inventory.TryGetSlotEntity(target, "mask", out var inMask) && inMask == smokable)
+        {
+            _inventory.TryUnequip(user, target, "mask", out var unequipped, silent: true, force: true);
+            var toReturn = unequipped ?? smokable;
+            if (!Deleted(toReturn) && !TerminatingOrDeleted(toReturn))
+            {
+                if (handId != null && _hands.TryPickup(user, toReturn, handId, animate: false))
+                    return;
+
+                _hands.PickupOrDrop(user, toReturn);
+            }
+        }
     }
 
     /// <summary>

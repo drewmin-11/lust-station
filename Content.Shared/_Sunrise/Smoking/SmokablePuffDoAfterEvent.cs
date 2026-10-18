@@ -9,4 +9,16 @@ namespace Content.Shared._Sunrise.Smoking;
 [Serializable, NetSerializable]
 public sealed partial class SmokablePuffDoAfterEvent : SimpleDoAfterEvent
 {
+    public bool ReturnToHand;
+    public string? HandId;
+
+    public SmokablePuffDoAfterEvent()
+    {
+    }
+
+    public SmokablePuffDoAfterEvent(bool returnToHand, string? handId)
+    {
+        ReturnToHand = returnToHand;
+        HandId = handId;
+    }
 }
