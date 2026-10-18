@@ -52,6 +52,25 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         [DataField("puffVolume")]
         [ViewVariables(VVAccess.ReadWrite)]
         public float PuffVolume { get; set; } = 1.5f;
+
+        /// <summary>
+        /// Количество молей водяного пара за одну затяжку вейпом.
+        /// </summary>
+        [DataField("vaporMolesPerPuff")]
+        [ViewVariables(VVAccess.ReadWrite)]
+        public float VaporMolesPerPuff { get; set; } = 3.5f;
+
+        /// <summary>
+        /// Звук затяжки вейпом (шипение спирали и плотный обдув).
+        /// </summary>
+        [DataField("puffSound")]
+        public Robust.Shared.Audio.SoundSpecifier? PuffSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_puff.ogg");
+
+        /// <summary>
+        /// Звук выдоха клубов пара.
+        /// </summary>
+        [DataField("exhaleSound")]
+        public Robust.Shared.Audio.SoundSpecifier? ExhaleSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_exhale.ogg");
         // Sunrise-End
     }
 }

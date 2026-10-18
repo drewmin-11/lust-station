@@ -39,14 +39,35 @@ vape-cartridge-eject-verb = Eject cartridge
 smoking-patch-applied = You firmly apply the nicotine patch to the skin.
 smoking-patch-expired = The nicotine patch has expired and peels off.
 
-# Entity names
+# Lighter tricks
+lighter-trick-verb = Perform trick
+lighter-trick-not-in-hands = You must hold the lighter in your hand to perform tricks!
+lighter-trick-open-1 = {CAPITALIZE(THE($user))} clicks {THE($item)}'s lid open against their hip, sparking a steady flame!
+lighter-trick-open-2 = {CAPITALIZE(THE($user))} rolls {THE($item)} across their knuckles and snaps it open with a flame!
+lighter-trick-open-3 = {CAPITALIZE(THE($user))} tosses {THE($item)} in the air, catching it and striking a flame with a resonant click!
+lighter-trick-close-1 = {CAPITALIZE(THE($user))} spins the lit {THE($item)} between their fingers and snaps the lid shut!
+lighter-trick-close-2 = {CAPITALIZE(THE($user))} waves a palm over {THE($item)}, extinguishing the flame and slamming the lid with a crisp snap!
+lighter-trick-close-3 = {CAPITALIZE(THE($user))} tosses the lit {THE($item)}, catching and snapping it shut in one smooth motion!
+lighter-trick-fail-burn = {CAPITALIZE(THE($user))} drops the lit {THE($item)}, burning their fingers awkwardly!
+lighter-trick-fail-drop = {CAPITALIZE(THE($user))} tries to perform a trick with {THE($item)}, but fumbles and drops it on the floor!
+
+# Entity names and descriptions
 ent-VapeCartridgeEmpty = empty vape cartridge
+    .desc = An empty 15u refillable pod cartridge for electronic vaporizers. Can be refilled with any vape e-liquid.
 ent-VapeCartridgeMint = mint vape cartridge
+    .desc = A 15u pod cartridge filled with refreshing menthol and nicotine e-liquid.
 ent-VapeCartridgeBerry = berry vape cartridge
+    .desc = A 15u pod cartridge filled with sweet forest berries and nicotine e-liquid.
 ent-VapeCartridgeTobacco = tobacco vape cartridge
+    .desc = A 15u pod cartridge filled with rich cured tobacco and nicotine e-liquid.
 ent-VapeJuiceMint = mint e-liquid bottle
+    .desc = A 30ml bottle of cool mint and lime e-liquid with nicotine for refilling vape pods.
 ent-VapeJuiceBerry = berry e-liquid bottle
+    .desc = A 30ml bottle of sweet berry burst e-liquid with nicotine for refilling vape pods.
 ent-VapeJuiceTobacco = tobacco e-liquid bottle
+    .desc = A 30ml bottle of robust cured tobacco e-liquid with nicotine for refilling vape pods.
 ent-NicotinePatch = nicotine patch
+    .desc = A transdermal patch releasing a steady dose of nicotine into the bloodstream to ease cravings.
 ent-FoodNicotineGum = nicotine chewing gum
+    .desc = Medicated chewing gum with nicotine to help curb sudden smoking urges.
 

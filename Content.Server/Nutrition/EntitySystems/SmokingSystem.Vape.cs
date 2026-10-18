@@ -138,6 +138,13 @@ namespace Content.Server.Nutrition.EntitySystems
 
             if (!exploded)
             {
+                // Sunrise-Start: проигрываем звук затяжки прямо от персонажа
+                if (entity.Comp.PuffSound != null)
+                {
+                    _audio.PlayPvs(entity.Comp.PuffSound, args.Target.Value, Robust.Shared.Audio.AudioParams.Default.WithVolume(-1.0f).WithMaxDistance(7f).WithVariation(0.04f));
+                }
+                // Sunrise-End
+
                 var vapeDoAfterEvent = new VapeDoAfterEvent(solution, forced);
                 _doAfterSystem.TryStartDoAfter(new DoAfterArgs(EntityManager, args.User, delay, vapeDoAfterEvent, entity.Owner, target: args.Target, used: entity.Owner)
                 {
@@ -159,7 +166,7 @@ namespace Content.Server.Nutrition.EntitySystems
                 return;
             }
 
-            // Sunrise edit start - постепенный расход жидкости и никотиновый эффект
+            // Sunrise edit start - постепенный расход жидкости, никотиновый эффект и густой пар
             var puffAmount = Content.Shared.FixedPoint.FixedPoint2.Min(Content.Shared.FixedPoint.FixedPoint2.New(entity.Comp.PuffVolume), args.Solution.Volume);
             var inhaled = args.Solution.SplitSolution(puffAmount);
 
@@ -176,11 +183,15 @@ namespace Content.Server.Nutrition.EntitySystems
             }
 
             var merger = new GasMixture(1) { Temperature = args.Solution.Temperature };
-            merger.SetMoles(entity.Comp.GasType, puffAmount.Value / entity.Comp.ReductionFactor);
+            // Выделяем густой клуб пара
+            merger.SetMoles(entity.Comp.GasType, entity.Comp.VaporMolesPerPuff);
 
             _atmos.Merge(environment, merger);
 
-            _audio.PlayPvs(new Robust.Shared.Audio.SoundPathSpecifier("/Audio/Effects/sparks1.ogg"), args.Args.Target.Value, Robust.Shared.Audio.AudioParams.Default.WithVolume(-4f));
+            if (entity.Comp.ExhaleSound != null)
+            {
+                _audio.PlayPvs(entity.Comp.ExhaleSound, args.Args.Target.Value, Robust.Shared.Audio.AudioParams.Default.WithVolume(-1.5f).WithMaxDistance(7f).WithVariation(0.04f));
+            }
             // Sunrise edit end
 
             if (args.Forced)

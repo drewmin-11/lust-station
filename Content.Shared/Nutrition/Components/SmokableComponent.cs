@@ -57,7 +57,7 @@ namespace Content.Shared.Nutrition.Components
         /// Количество молей сигаретного дыма, выпускаемое за одну затяжку.
         /// </summary>
         [DataField("smokeMolesPerPuff"), ViewVariables(VVAccess.ReadWrite)]
-        public float SmokeMolesPerPuff = 0.6f;
+        public float SmokeMolesPerPuff = 0.18f;
 
         /// <summary>
         /// Время затяжки при курении себя (в секундах).

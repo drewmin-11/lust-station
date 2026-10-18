@@ -394,7 +394,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             Act = () =>
             {
                 _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
-                _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/Footsteps/dirt1.ogg"), entity.Owner);
+                _audio.PlayPvs(new SoundCollectionSpecifier("FootstepBoots"), entity.Owner);
                 _popup.PopupEntity(Loc.GetString("smoking-crush-boot-popup", ("user", Identity.Entity(user, EntityManager)), ("item", entity.Owner)), entity.Owner);
             },
             Priority = 1

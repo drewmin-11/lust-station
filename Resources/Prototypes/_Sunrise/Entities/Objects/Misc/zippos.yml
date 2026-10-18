@@ -79,6 +79,7 @@
   - type: UseDelay
   - type: IgnitionSource
     ignited: false
+  - type: LighterTrick
   - type: PhysicalComposition
     materialComposition:
       Steel: 260
