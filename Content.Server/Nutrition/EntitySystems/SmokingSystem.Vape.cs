@@ -2,6 +2,8 @@ using Content.Server.DoAfter;
 using Content.Server.Explosion.EntitySystems;
 using Content.Server.Nutrition.Components;
 using Content.Server.Popups;
+using Content.Shared._Sunrise.Smoking;
+using Content.Shared.Actions;
 using Content.Shared.Body.Components;
 using Content.Shared.Atmos;
 using Content.Shared.Chemistry;
@@ -12,12 +14,16 @@ using Content.Shared.DoAfter;
 using Content.Shared.Emag.Systems;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
+using Content.Shared.Interaction.Events;
+
 using Content.Shared.Nutrition;
 using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
 using Content.Shared.Throwing;
+using Content.Shared.Verbs;
 using Robust.Shared.Containers;
 using Robust.Shared.Random;
+using Robust.Shared.Utility;
 
 /// <summary>
 /// System for vapes
@@ -36,30 +42,50 @@ namespace Content.Server.Nutrition.EntitySystems
         [Dependency] private Content.Server._Sunrise.Smoking.NicotineAddictionSystem _nicotine = default!;
         [Dependency] private IRobustRandom _random = default!;
         [Dependency] private ThrowingSystem _throwing = default!;
+        [Dependency] private ActionContainerSystem _actionContainer = default!;
         // Sunrise-End
 
         private void InitializeVapes()
         {
             SubscribeLocalEvent<VapeComponent, MapInitEvent>(OnVapeMapInit);
             SubscribeLocalEvent<VapeComponent, AfterInteractEvent>(OnVapeInteraction);
+            SubscribeLocalEvent<VapeComponent, UseInHandEvent>(OnVapeUseInHand);
             SubscribeLocalEvent<VapeComponent, VapeDoAfterEvent>(OnVapeDoAfter);
             SubscribeLocalEvent<VapeComponent, GotEmaggedEvent>(OnEmagged);
             SubscribeLocalEvent<VapeComponent, EntInsertedIntoContainerMessage>(OnVapeInserted);
             SubscribeLocalEvent<VapeComponent, EntRemovedFromContainerMessage>(OnVapeRemoved);
+            SubscribeLocalEvent<VapeComponent, GetItemActionsEvent>(OnVapeGetActions);
+            SubscribeLocalEvent<VapeComponent, BlowSmokeRingActionEvent>(OnVapeBlowSmokeRing);
+            SubscribeLocalEvent<VapeComponent, GetVerbsEvent<AlternativeVerb>>(AddVapeSmokeRingVerb);
+        }
+
+        private void OnVapeUseInHand(Entity<VapeComponent> entity, ref UseInHandEvent args)
+        {
+            if (args.Handled)
+                return;
+
+            if (TryStartVape(entity, args.User, args.User))
+                args.Handled = true;
         }
 
         private void OnVapeInteraction(Entity<VapeComponent> entity, ref AfterInteractEvent args)
         {
-            var delay = entity.Comp.Delay;
-            var forced = true;
-            var exploded = false;
-
-            if (!args.CanReach
-                || !HasComp<BloodstreamComponent>(args.Target)
-                || !_ingestion.HasMouthAvailable(args.User, args.Target.Value)
-                )
-            {
+            if (args.Handled || !args.CanReach || args.Target == null)
                 return;
+
+            if (TryStartVape(entity, args.User, args.Target.Value))
+                args.Handled = true;
+        }
+
+        public bool TryStartVape(Entity<VapeComponent> entity, EntityUid user, EntityUid target)
+        {
+            if (!HasComp<BloodstreamComponent>(target))
+                return false;
+
+            if (!_ingestion.HasMouthAvailable(user, target))
+            {
+                _popupSystem.PopupEntity(Loc.GetString("smoking-puff-helmet-blocked"), user, user);
+                return false;
             }
 
             // Sunrise edit start - поддержка картриджей и нормальной заправки вейпа
@@ -70,98 +96,82 @@ namespace Content.Server.Nutrition.EntitySystems
             {
                 if (slot.Item == null)
                 {
-                    _popupSystem.PopupEntity(Loc.GetString("vape-component-no-cartridge"), args.User, args.User);
-                    args.Handled = true;
-                    return;
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-no-cartridge"), user, user);
+                    return false;
                 }
 
                 if (!_solutionContainerSystem.TryGetRefillableSolution(slot.Item.Value, out _, out solution))
                 {
-                    _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), args.User, args.User);
-                    args.Handled = true;
-                    return;
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), user, user);
+                    return false;
                 }
             }
             else
             {
                 if (!_solutionContainerSystem.TryGetRefillableSolution(entity.Owner, out _, out solution))
-                    return;
+                    return false;
             }
 
             if (solution == null || solution.Contents.Count == 0 || solution.Volume <= Content.Shared.FixedPoint.FixedPoint2.Zero)
             {
-                _popupSystem.PopupEntity(
-                    Loc.GetString("vape-component-vape-empty"), args.Target.Value,
-                    args.User);
-                return;
+                _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), target, user);
+                return false;
             }
 
-            if (args.Target == args.User)
-            {
-                delay = entity.Comp.UserDelay;
-                forced = false;
-            }
+            var forced = (target != user);
+            var delay = forced ? entity.Comp.Delay : entity.Comp.UserDelay;
 
             if (entity.Comp.ExplodeOnUse || _emag.CheckFlag(entity, EmagType.Interaction))
             {
                 _explosionSystem.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
                 Del(entity);
-                exploded = true;
+                return false;
             }
-            else
+
+            // Взрываем вейп только при наличии опасных нестабильных реагентов (плазма, тритий)
+            foreach (var name in solution.Contents)
             {
-                // Взрываем вейп только при наличии опасных нестабильных реагентов (плазма, тритий)
-                foreach (var name in solution.Contents)
+                var id = name.Reagent.Prototype;
+                if (id == "Plasma" || id == "Tritium" || id == "Nitroglycerin")
                 {
-                    var id = name.Reagent.Prototype;
-                    if (id == "Plasma" || id == "Tritium" || id == "Nitroglycerin")
-                    {
-                        exploded = true;
-                        _explosionSystem.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
-                        Del(entity);
-                        break;
-                    }
+                    _explosionSystem.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
+                    Del(entity);
+                    return false;
                 }
             }
-            // Sunrise edit end
 
             if (forced)
             {
-                var targetName = Identity.Entity(args.Target.Value, EntityManager);
-                var userName = Identity.Entity(args.User, EntityManager);
+                var targetName = Identity.Entity(target, EntityManager);
+                var userName = Identity.Entity(user, EntityManager);
 
                 _popupSystem.PopupEntity(
-                    Loc.GetString("vape-component-try-use-vape-forced", ("user", userName)), args.Target.Value,
-                    args.Target.Value);
+                    Loc.GetString("vape-component-try-use-vape-forced", ("user", userName)), target, target);
 
                 _popupSystem.PopupEntity(
-                    Loc.GetString("vape-component-try-use-vape-forced-user", ("target", targetName)), args.User,
-                    args.User);
+                    Loc.GetString("vape-component-try-use-vape-forced-user", ("target", targetName)), user, user);
             }
             else
             {
                 _popupSystem.PopupEntity(
-                    Loc.GetString("vape-component-try-use-vape"), args.User,
-                    args.User);
+                    Loc.GetString("vape-component-try-use-vape"), user, user);
             }
 
-            if (!exploded)
+            // Sunrise-Start: проигрываем звук затяжки прямо от персонажа
+            if (entity.Comp.PuffSound != null)
             {
-                // Sunrise-Start: проигрываем звук затяжки прямо от персонажа
-                if (entity.Comp.PuffSound != null)
-                {
-                    _audio.PlayPvs(entity.Comp.PuffSound, args.Target.Value, Robust.Shared.Audio.AudioParams.Default.WithVolume(-1.0f).WithMaxDistance(7f).WithVariation(0.04f));
-                }
-                // Sunrise-End
-
-                var vapeDoAfterEvent = new VapeDoAfterEvent(solution, forced);
-                _doAfterSystem.TryStartDoAfter(new DoAfterArgs(EntityManager, args.User, delay, vapeDoAfterEvent, entity.Owner, target: args.Target, used: entity.Owner)
-                {
-                    BreakOnMove = false,
-                    BreakOnDamage = true
-                });
+                _audio.PlayPvs(entity.Comp.PuffSound, target, Robust.Shared.Audio.AudioParams.Default.WithVolume(-1.0f).WithMaxDistance(7f).WithVariation(0.04f));
             }
-            args.Handled = true;
+            // Sunrise-End
+
+            var vapeDoAfterEvent = new VapeDoAfterEvent(solution, forced);
+            _doAfterSystem.TryStartDoAfter(new DoAfterArgs(EntityManager, user, delay, vapeDoAfterEvent, entity.Owner, target: target, used: entity.Owner)
+            {
+                BreakOnMove = false,
+                BreakOnDamage = true
+            });
+
+            return true;
         }
 
         private void OnVapeDoAfter(Entity<VapeComponent> entity, ref VapeDoAfterEvent args)
@@ -218,22 +228,119 @@ namespace Content.Server.Nutrition.EntitySystems
             }
             else
             {
-                // Sunrise edit: шанс 35% выпустить красивое летящее колечко пара
-                if (_random.Prob(0.35f))
-                {
-                    _popupSystem.PopupEntity(
-                        Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(args.Args.Target.Value, EntityManager))),
-                        args.Args.Target.Value);
+                _popupSystem.PopupEntity(
+                    Loc.GetString("vape-component-vape-success"), args.Args.Target.Value,
+                    args.Args.Target.Value);
+            }
+        }
 
-                    SpawnSmokeRing(args.Args.Target.Value);
-                }
-                else
+        private void OnVapeGetActions(Entity<VapeComponent> entity, ref GetItemActionsEvent args)
+        {
+            args.AddAction(ref entity.Comp.SmokeRingActionEntity, entity.Comp.SmokeRingAction);
+        }
+
+        private void OnVapeBlowSmokeRing(Entity<VapeComponent> entity, ref BlowSmokeRingActionEvent args)
+        {
+            if (args.Handled)
+                return;
+
+            if (TryBlowSmokeRing(entity, args.Performer))
+                args.Handled = true;
+        }
+
+        private void AddVapeSmokeRingVerb(Entity<VapeComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
+        {
+            if (!args.CanInteract || !args.CanAccess)
+                return;
+
+            var user = args.User;
+            var verb = new AlternativeVerb
+            {
+                Text = Loc.GetString("smoking-verb-blow-smoke-ring"),
+                Icon = new SpriteSpecifier.Rsi(new ResPath("/Textures/_Sunrise/Effects/smoke_ring.rsi"), "ring"),
+                Act = () => TryBlowSmokeRing(entity, user),
+                Priority = 2
+            };
+            args.Verbs.Add(verb);
+        }
+
+        /// <summary>
+        /// Запуск действия выдувания колечка пара из вейпа.
+        /// </summary>
+        public bool TryBlowSmokeRing(Entity<VapeComponent> entity, EntityUid user)
+        {
+            if (!HasComp<BloodstreamComponent>(user))
+                return false;
+
+            if (!_ingestion.HasMouthAvailable(user, user))
+            {
+                _popupSystem.PopupEntity(Loc.GetString("smoking-puff-helmet-blocked"), user, user);
+                return false;
+            }
+
+            Solution? solution = null;
+
+            if (TryComp<Content.Shared.Containers.ItemSlots.ItemSlotsComponent>(entity.Owner, out var itemSlots) &&
+                _itemSlotsSystem.TryGetSlot(entity.Owner, entity.Comp.CartridgeSlot, out var slot, itemSlots))
+            {
+                if (slot.Item == null)
                 {
-                    _popupSystem.PopupEntity(
-                        Loc.GetString("vape-component-vape-success"), args.Args.Target.Value,
-                        args.Args.Target.Value);
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-no-cartridge"), user, user);
+                    return false;
+                }
+
+                if (!_solutionContainerSystem.TryGetRefillableSolution(slot.Item.Value, out _, out solution))
+                {
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), user, user);
+                    return false;
                 }
             }
+            else
+            {
+                if (!_solutionContainerSystem.TryGetRefillableSolution(entity.Owner, out _, out solution))
+                    return false;
+            }
+
+            if (solution == null || solution.Contents.Count == 0 || solution.Volume <= Content.Shared.FixedPoint.FixedPoint2.Zero)
+            {
+                _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), user, user);
+                return false;
+            }
+
+            // Небольшой расход жидкости на красивое колечко
+            var ringAmount = Content.Shared.FixedPoint.FixedPoint2.Min(Content.Shared.FixedPoint.FixedPoint2.New(0.5f), solution.Volume);
+            var inhaled = solution.SplitSolution(ringAmount);
+
+            if (inhaled.GetTotalPrototypeQuantity("Nicotine") > Content.Shared.FixedPoint.FixedPoint2.Zero)
+            {
+                _nicotine.RegisterPuff(user);
+            }
+
+            if (TryComp<BloodstreamComponent>(user, out var bloodstream))
+            {
+                _reactiveSystem.DoEntityReaction(user, inhaled, ReactionMethod.Ingestion);
+                _bloodstreamSystem.TryAddToBloodstream((user, bloodstream), inhaled);
+            }
+
+            var environment = _atmos.GetContainingMixture(user, true, true);
+            if (environment != null)
+            {
+                var merger = new GasMixture(1) { Temperature = solution.Temperature };
+                merger.SetMoles(entity.Comp.GasType, 1.5f);
+                _atmos.Merge(environment, merger);
+            }
+
+            if (entity.Comp.ExhaleSound != null)
+            {
+                _audio.PlayPvs(entity.Comp.ExhaleSound, user, Robust.Shared.Audio.AudioParams.Default.WithVolume(-1.5f).WithMaxDistance(7f).WithVariation(0.04f));
+            }
+
+            _popupSystem.PopupEntity(
+                Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))),
+                user);
+
+            SpawnSmokeRing(user);
+            return true;
         }
 
         /// <summary>
@@ -247,7 +354,7 @@ namespace Content.Server.Nutrition.EntitySystems
             if (dir.LengthSquared() > 0.001f)
             {
                 dir = System.Numerics.Vector2.Normalize(dir);
-                _throwing.TryThrow(ring, dir * 1.5f, 1.5f, user: user, doSpin: false);
+                _throwing.TryThrow(ring, dir * 3.5f, baseThrowSpeed: 3.5f, user: user, pushbackRatio: 0f, friction: 0.02f, playSound: false, doSpin: false);
             }
         }
 

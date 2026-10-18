@@ -58,7 +58,7 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         /// </summary>
         [DataField("vaporMolesPerPuff")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float VaporMolesPerPuff { get; set; } = 45.0f;
+        public float VaporMolesPerPuff { get; set; } = 6.0f;
 
         /// <summary>
         /// Звук затяжки вейпом (шипение спирали и плотный обдув).
@@ -71,6 +71,15 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         /// </summary>
         [DataField("exhaleSound")]
         public Robust.Shared.Audio.SoundSpecifier? ExhaleSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_exhale.ogg");
+
+        /// <summary>
+        /// Прототип действия запуска колечка пара.
+        /// </summary>
+        [DataField("smokeRingAction")]
+        public Robust.Shared.Prototypes.EntProtoId SmokeRingAction = "ActionBlowSmokeRing";
+
+        [DataField("smokeRingActionEntity")]
+        public EntityUid? SmokeRingActionEntity;
         // Sunrise-End
     }
 }

@@ -1,4 +1,6 @@
 using Content.Server.Atmos.EntitySystems;
+using Content.Shared.Actions;
+
 using Content.Server.Body.Systems;
 using Content.Server.Chat.Systems;
 using Content.Server.DoAfter;
@@ -31,6 +33,8 @@ using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
+using Robust.Shared.Utility;
+
 
 namespace Content.Server._Sunrise.Smoking;
 
@@ -57,6 +61,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private NicotineAddictionSystem _nicotine = default!;
     [Dependency] private StorageSystem _storage = default!;
     [Dependency] private ThrowingSystem _throwing = default!;
+    [Dependency] private ActionContainerSystem _actionContainer = default!;
 
     private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
 
@@ -69,7 +74,11 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         SubscribeLocalEvent<SmokableComponent, SmokablePuffDoAfterEvent>(OnPuffDoAfter);
         SubscribeLocalEvent<SmokableComponent, InteractUsingEvent>(OnInteractUsing);
         SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(AddCrushVerb);
+        SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(AddSmokeRingVerb);
+        SubscribeLocalEvent<SmokableComponent, GetItemActionsEvent>(OnSmokableGetActions);
+        SubscribeLocalEvent<SmokableComponent, BlowSmokeRingActionEvent>(OnSmokableBlowSmokeRing);
     }
+
 
     /// <summary>
     /// Обработка клика предметом по цели (по себе или другому персонажу).
@@ -292,23 +301,11 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         }
         _lastPuffTime[target] = curTime;
 
-        // 5. Поп-ап сообщение и шанс колечка дыма (если не подавился)
+        // 5. Поп-ап сообщение об успехе затяжки (если не подавился)
         var isSelf = (target == user);
         if (!choked)
         {
-            if (isSelf && _random.Prob(0.25f))
-            {
-                _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
-                var userXform = Transform(user);
-                var ring = Spawn("EffectSmokeRing", userXform.Coordinates);
-                var dir = userXform.LocalRotation.ToWorldVec();
-                if (dir.LengthSquared() > 0.001f)
-                {
-                    dir = System.Numerics.Vector2.Normalize(dir);
-                    _throwing.TryThrow(ring, dir * 1.5f, 1.5f, user: user, doSpin: false);
-                }
-            }
-            else if (isSelf)
+            if (isSelf)
             {
                 _popup.PopupEntity(Loc.GetString("smoking-puff-success-self", ("item", entity.Owner)), user, user);
             }
@@ -411,4 +408,103 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         };
         args.Verbs.Add(verb);
     }
+
+    private void OnSmokableGetActions(Entity<SmokableComponent> entity, ref GetItemActionsEvent args)
+    {
+        args.AddAction(ref entity.Comp.SmokeRingActionEntity, entity.Comp.SmokeRingAction);
+    }
+
+    private void OnSmokableBlowSmokeRing(Entity<SmokableComponent> entity, ref BlowSmokeRingActionEvent args)
+    {
+        if (args.Handled)
+            return;
+
+        if (TryBlowSmokeRing(entity, args.Performer))
+            args.Handled = true;
+    }
+
+    private void AddSmokeRingVerb(Entity<SmokableComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (!args.CanInteract || !args.CanAccess || entity.Comp.State != SmokableState.Lit)
+            return;
+
+        var user = args.User;
+        var verb = new AlternativeVerb
+        {
+            Text = Loc.GetString("smoking-verb-blow-smoke-ring"),
+            Icon = new SpriteSpecifier.Rsi(new ResPath("/Textures/_Sunrise/Effects/smoke_ring.rsi"), "ring"),
+            Act = () => TryBlowSmokeRing(entity, user),
+            Priority = 2
+        };
+        args.Verbs.Add(verb);
+    }
+
+    /// <summary>
+    /// Запуск действия выдувания колечка дыма сигаретой.
+    /// </summary>
+    public bool TryBlowSmokeRing(Entity<SmokableComponent> entity, EntityUid user)
+    {
+        if (!CanPuff(entity, user, user, out var reason))
+        {
+            if (!string.IsNullOrEmpty(reason))
+                _popup.PopupEntity(reason, user, user);
+            return false;
+        }
+
+        if (!_solution.TryGetSolution(entity.Owner, entity.Comp.Solution, out var soln, out var solution))
+            return false;
+
+        // Расходуем небольшую порцию раствора на колечко
+        var ringAmount = FixedPoint2.Min(FixedPoint2.New(0.15f), solution.Volume);
+        if (ringAmount > FixedPoint2.Zero)
+        {
+            var inhaled = _solution.SplitSolution(soln.Value, ringAmount);
+            if (TryComp<BloodstreamComponent>(user, out var bloodstream))
+            {
+                _reactive.DoEntityReaction(user, inhaled, ReactionMethod.Ingestion);
+                _bloodstream.TryAddToBloodstream((user, bloodstream), inhaled);
+            }
+        }
+
+        _nicotine.RegisterPuff(user);
+
+        // Выпускаем немного сигаретного дыма в атмосферу
+        var environment = _atmos.GetContainingMixture(user, true, true);
+        if (environment != null)
+        {
+            var merger = new GasMixture(1) { Temperature = Atmospherics.T20C + 15f };
+            merger.SetMoles(Gas.TobaccoSmoke, 0.05f);
+            _atmos.Merge(environment, merger);
+        }
+
+        if (entity.Comp.ExhaleSound != null)
+            _audio.PlayPvs(entity.Comp.ExhaleSound, user, AudioParams.Default.WithVolume(-1.5f).WithMaxDistance(7f).WithVariation(0.04f));
+
+        _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
+        LaunchSmokeRing(user);
+
+        if (solution.Volume <= FixedPoint2.Zero)
+        {
+            _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+            _popup.PopupEntity(Loc.GetString("smoking-puff-burnt-out", ("item", entity.Owner)), user, user);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Создает и запускает летящее колечко дыма или пара вперед по направлению взгляда персонажа.
+    /// </summary>
+    public void LaunchSmokeRing(EntityUid user)
+    {
+        var userXform = Transform(user);
+        var ring = Spawn("EffectSmokeRing", userXform.Coordinates);
+        var dir = userXform.LocalRotation.ToWorldVec();
+        if (dir.LengthSquared() > 0.001f)
+        {
+            dir = System.Numerics.Vector2.Normalize(dir);
+            _throwing.TryThrow(ring, dir * 3.5f, baseThrowSpeed: 3.5f, user: user, pushbackRatio: 0f, friction: 0.02f, playSound: false, doSpin: false);
+        }
+    }
 }
+

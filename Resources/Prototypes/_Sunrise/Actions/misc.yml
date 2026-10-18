@@ -10,3 +10,17 @@
     icon: { sprite: _Sunrise/Clothing/Neck/Mantles/goliathalivemantle.rsi, state: icon }
   - type: InstantAction
     event: !type:ToggleClothingEvent
+
+- type: entity
+  parent: BaseAction
+  id: ActionBlowSmokeRing
+  name: action-blow-smoke-ring
+  description: action-blow-smoke-ring-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Action
+    useDelay: 2.0
+    icon: { sprite: _Sunrise/Effects/smoke_ring.rsi, state: ring }
+  - type: InstantAction
+    event: !type:BlowSmokeRingActionEvent
+

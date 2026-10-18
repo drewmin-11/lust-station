@@ -206,12 +206,26 @@
   categories: [ HideSpawnMenu ]
   components:
   - type: TimedDespawn
-    lifetime: 1.5
+    lifetime: 2.2
   - type: Sprite
     noRot: true
     drawdepth: Effects
     sprite: _Sunrise/Effects/smoke_ring.rsi
     state: ring
+  - type: Physics
+    bodyType: Dynamic
+    linearDamping: 0.1
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.2,-0.2,0.2,0.2"
+        hard: false
+        mask:
+        - FullTileMask
+        layer:
+        - ItemMask
   - type: EffectVisuals
   - type: Tag
     tags:

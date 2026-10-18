@@ -71,3 +71,9 @@ ent-NicotinePatch = nicotine patch
 ent-FoodNicotineGum = nicotine chewing gum
     .desc = Medicated chewing gum with nicotine to help curb sudden smoking urges.
 
+# Smoke ring action
+action-blow-smoke-ring = Blow smoke ring
+action-blow-smoke-ring-desc = Take a quick puff and blow a beautiful flying smoke ring forward.
+smoking-verb-blow-smoke-ring = Blow smoke ring
+
+

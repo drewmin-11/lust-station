@@ -82,6 +82,15 @@ namespace Content.Shared.Nutrition.Components
         /// </summary>
         [DataField("exhaleSound")]
         public SoundSpecifier? ExhaleSound = new SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_exhale.ogg");
+
+        /// <summary>
+        /// Прототип действия запуска колечка дыма.
+        /// </summary>
+        [DataField("smokeRingAction")]
+        public Robust.Shared.Prototypes.EntProtoId SmokeRingAction = "ActionBlowSmokeRing";
+
+        [DataField("smokeRingActionEntity")]
+        public EntityUid? SmokeRingActionEntity;
         // Sunrise added end
     }
 }
