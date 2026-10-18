@@ -73,8 +73,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         SubscribeLocalEvent<SmokableComponent, UseInHandEvent>(OnUseInHand);
         SubscribeLocalEvent<SmokableComponent, SmokablePuffDoAfterEvent>(OnPuffDoAfter);
         SubscribeLocalEvent<SmokableComponent, InteractUsingEvent>(OnInteractUsing);
-        SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(AddCrushVerb);
-        SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(AddSmokeRingVerb);
+        SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(OnGetAlternativeVerbs);
         SubscribeLocalEvent<SmokableComponent, GetItemActionsEvent>(OnSmokableGetActions);
         SubscribeLocalEvent<SmokableComponent, BlowSmokeRingActionEvent>(OnSmokableBlowSmokeRing);
     }
@@ -380,6 +379,12 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _popup.PopupEntity(Loc.GetString("smoking-light-from-other", ("user", userName), ("target", targetName), ("used", usedName)), entity.Owner);
             args.Handled = true;
         }
+    }
+
+    private void OnGetAlternativeVerbs(Entity<SmokableComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        AddCrushVerb(entity, ref args);
+        AddSmokeRingVerb(entity, ref args);
     }
 
     /// <summary>
