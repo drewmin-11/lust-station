@@ -4,6 +4,7 @@ using Content.Server.Chat.Systems;
 using Content.Server.DoAfter;
 using Content.Server.Nutrition.EntitySystems;
 using Content.Server.Popups;
+using Content.Server.Storage.EntitySystems;
 using Content.Shared._Sunrise.Smoking;
 using Content.Shared.Atmos;
 using Content.Shared.Body.Components;
@@ -17,10 +18,14 @@ using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Inventory;
+using Content.Shared.Item;
 using Content.Shared.Jittering;
 using Content.Shared.Nutrition.Components;
 using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
+using Content.Shared.Storage;
+using Content.Shared.Storage.Components;
+using Content.Shared.Verbs;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Random;
@@ -49,6 +54,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private ChatSystem _chat = default!;
     [Dependency] private SharedJitteringSystem _jittering = default!;
     [Dependency] private NicotineAddictionSystem _nicotine = default!;
+    [Dependency] private StorageSystem _storage = default!;
 
     private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
 
@@ -60,6 +66,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         SubscribeLocalEvent<SmokableComponent, UseInHandEvent>(OnUseInHand);
         SubscribeLocalEvent<SmokableComponent, SmokablePuffDoAfterEvent>(OnPuffDoAfter);
         SubscribeLocalEvent<SmokableComponent, InteractUsingEvent>(OnInteractUsing);
+        SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(AddCrushVerb);
     }
 
     /// <summary>
@@ -69,6 +76,18 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     {
         if (args.Handled || !args.CanReach || args.Target == null)
             return;
+
+        // Тушение сигареты о пепельницу
+        if (entity.Comp.State == SmokableState.Lit && TryComp<StorageComponent>(args.Target.Value, out var storage) &&
+            (HasComp<ItemCounterComponent>(args.Target.Value) || HasComp<DumpableComponent>(args.Target.Value)))
+        {
+            _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+            _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/sparks4.ogg"), args.Target.Value, AudioParams.Default.WithVolume(-4f));
+            _popup.PopupEntity(Loc.GetString("smoking-ashtray-extinguish"), args.Target.Value, args.User);
+            _storage.Insert(args.Target.Value, entity.Owner, out _, storageComp: storage);
+            args.Handled = true;
+            return;
+        }
 
         if (TryStartPuff(entity, args.User, args.Target.Value))
             args.Handled = true;
@@ -170,9 +189,24 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             return false;
         }
 
-        // Проверяем наличие рта и доступность дыхания
-        if (!HasComp<BloodstreamComponent>(target) || !_ingestion.HasMouthAvailable(user, target))
+        // Проверяем наличие рта и доступность дыхания (шлемы, маски и т.д.)
+        if (!HasComp<BloodstreamComponent>(target))
         {
+            return false;
+        }
+
+        if (!_ingestion.HasMouthAvailable(user, target))
+        {
+            reason = Loc.GetString("smoking-puff-helmet-blocked");
+            return false;
+        }
+
+        // Проверяем наличие кислорода и давления в атмосфере
+        var environment = _atmos.GetContainingMixture(target, true, true);
+        if (environment == null || environment.Pressure < 10f || environment.GetMoles(Gas.Oxygen) < 0.2f)
+        {
+            _smoking.SetSmokableState(entity.Owner, SmokableState.Unlit, entity.Comp);
+            reason = Loc.GetString("smoking-extinguish-vacuum");
             return false;
         }
 
@@ -339,5 +373,32 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _popup.PopupEntity(Loc.GetString("smoking-light-from-other", ("user", userName), ("target", targetName), ("used", usedName)), entity.Owner);
             args.Handled = true;
         }
+    }
+
+    /// <summary>
+    /// Альтернативный глагол тушения тлеющей сигареты на полу ботинком.
+    /// </summary>
+    private void AddCrushVerb(Entity<SmokableComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (!args.CanInteract || !args.CanAccess || entity.Comp.State != SmokableState.Lit)
+            return;
+
+        var xform = Transform(entity.Owner);
+        if (xform.ParentUid != xform.GridUid && xform.ParentUid != xform.MapUid)
+            return;
+
+        var user = args.User;
+        var verb = new AlternativeVerb
+        {
+            Text = Loc.GetString("smoking-verb-crush-boot"),
+            Act = () =>
+            {
+                _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+                _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/Footsteps/dirt1.ogg"), entity.Owner);
+                _popup.PopupEntity(Loc.GetString("smoking-crush-boot-popup", ("user", Identity.Entity(user, EntityManager)), ("item", entity.Owner)), entity.Owner);
+            },
+            Priority = 1
+        };
+        args.Verbs.Add(verb);
     }
 }

@@ -43,5 +43,15 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         [DataField("solutionNeeded")]
         [ViewVariables(VVAccess.ReadWrite)]
         public string SolutionNeeded = "Water";
+
+        // Sunrise-Start
+        [DataField("cartridgeSlot")]
+        [ViewVariables(VVAccess.ReadWrite)]
+        public string CartridgeSlot { get; set; } = "cartridge";
+
+        [DataField("puffVolume")]
+        [ViewVariables(VVAccess.ReadWrite)]
+        public float PuffVolume { get; set; } = 1.5f;
+        // Sunrise-End
     }
 }

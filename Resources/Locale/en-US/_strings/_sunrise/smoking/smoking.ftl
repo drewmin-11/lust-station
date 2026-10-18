@@ -22,3 +22,31 @@ smoking-craving-3 = A persistent urge to smoke pulses in your head. It's time fo
 # Mood effects
 mood-effect-NicotineSatisfied = You feel a pleasant nicotine relaxation.
 mood-effect-NicotineWithdrawal = Withdrawal! You desperately need a cigarette, and your hands are shaking.
+
+# Helmets, vacuum, ashtrays and butts
+smoking-puff-helmet-blocked = A helmet or mask is preventing you from reaching your mouth!
+smoking-extinguish-vacuum = The cigarette goes out due to a lack of oxygen!
+smoking-ashtray-extinguish = You extinguish the cigarette in the ashtray.
+smoking-verb-crush-boot = Crush with boot
+smoking-crush-boot-popup = {CAPITALIZE(THE($user))} firmly stomps on {THE($item)}, crushing it under boot.
+
+# Vapes and cartridges
+vape-component-no-cartridge = There is no cartridge in the vape! Insert a cartridge with e-liquid.
+vape-cartridge-insert-verb = Insert cartridge
+vape-cartridge-eject-verb = Eject cartridge
+
+# Medicine (patches)
+smoking-patch-applied = You firmly apply the nicotine patch to the skin.
+smoking-patch-expired = The nicotine patch has expired and peels off.
+
+# Entity names
+ent-VapeCartridgeEmpty = empty vape cartridge
+ent-VapeCartridgeMint = mint vape cartridge
+ent-VapeCartridgeBerry = berry vape cartridge
+ent-VapeCartridgeTobacco = tobacco vape cartridge
+ent-VapeJuiceMint = mint e-liquid bottle
+ent-VapeJuiceBerry = berry e-liquid bottle
+ent-VapeJuiceTobacco = tobacco e-liquid bottle
+ent-NicotinePatch = nicotine patch
+ent-FoodNicotineGum = nicotine chewing gum
+

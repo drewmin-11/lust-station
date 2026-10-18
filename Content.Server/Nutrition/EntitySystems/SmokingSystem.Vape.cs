@@ -4,6 +4,9 @@ using Content.Server.Nutrition.Components;
 using Content.Server.Popups;
 using Content.Shared.Body.Components;
 using Content.Shared.Atmos;
+using Content.Shared.Chemistry;
+using Content.Shared.Chemistry.Components;
+using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Damage.Systems;
 using Content.Shared.DoAfter;
 using Content.Shared.Emag.Systems;
@@ -25,6 +28,9 @@ namespace Content.Server.Nutrition.EntitySystems
         [Dependency] private IngestionSystem _ingestion = default!;
         [Dependency] private ExplosionSystem _explosionSystem = default!;
         [Dependency] private PopupSystem _popupSystem = default!;
+        // Sunrise-Start
+        [Dependency] private Content.Server._Sunrise.Smoking.NicotineAddictionSystem _nicotine = default!;
+        // Sunrise-End
 
         private void InitializeVapes()
         {
@@ -40,7 +46,6 @@ namespace Content.Server.Nutrition.EntitySystems
             var exploded = false;
 
             if (!args.CanReach
-                || !_solutionContainerSystem.TryGetRefillableSolution(entity.Owner, out _, out var solution)
                 || !HasComp<BloodstreamComponent>(args.Target)
                 || !_ingestion.HasMouthAvailable(args.User, args.Target.Value)
                 )
@@ -48,7 +53,33 @@ namespace Content.Server.Nutrition.EntitySystems
                 return;
             }
 
-            if (solution.Contents.Count == 0)
+            // Sunrise edit start - поддержка картриджей и нормальной заправки вейпа
+            Solution? solution = null;
+
+            if (TryComp<Content.Shared.Containers.ItemSlots.ItemSlotsComponent>(entity.Owner, out var itemSlots) &&
+                _itemSlotsSystem.TryGetSlot(entity.Owner, entity.Comp.CartridgeSlot, out var slot, itemSlots))
+            {
+                if (slot.Item == null)
+                {
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-no-cartridge"), args.User, args.User);
+                    args.Handled = true;
+                    return;
+                }
+
+                if (!_solutionContainerSystem.TryGetRefillableSolution(slot.Item.Value, out _, out solution))
+                {
+                    _popupSystem.PopupEntity(Loc.GetString("vape-component-vape-empty"), args.User, args.User);
+                    args.Handled = true;
+                    return;
+                }
+            }
+            else
+            {
+                if (!_solutionContainerSystem.TryGetRefillableSolution(entity.Owner, out _, out solution))
+                    return;
+            }
+
+            if (solution == null || solution.Contents.Count == 0 || solution.Volume <= Content.Shared.FixedPoint.FixedPoint2.Zero)
             {
                 _popupSystem.PopupEntity(
                     Loc.GetString("vape-component-vape-empty"), args.Target.Value,
@@ -70,14 +101,11 @@ namespace Content.Server.Nutrition.EntitySystems
             }
             else
             {
-                // All vapes explode if they contain anything other than pure water???
-                // WTF is this? Why is this? Am I going insane?
-                // Who the fuck vapes pure water?
-                // If this isn't how this is meant to work and this is meant to be for vapes with plasma or something,
-                // just re-use the existing RiggableSystem.
+                // Взрываем вейп только при наличии опасных нестабильных реагентов (плазма, тритий)
                 foreach (var name in solution.Contents)
                 {
-                    if (name.Reagent.Prototype != entity.Comp.SolutionNeeded)
+                    var id = name.Reagent.Prototype;
+                    if (id == "Plasma" || id == "Tritium" || id == "Nitroglycerin")
                     {
                         exploded = true;
                         _explosionSystem.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
@@ -86,6 +114,7 @@ namespace Content.Server.Nutrition.EntitySystems
                     }
                 }
             }
+            // Sunrise edit end
 
             if (forced)
             {
@@ -130,15 +159,29 @@ namespace Content.Server.Nutrition.EntitySystems
                 return;
             }
 
-            //Smoking kills(your lungs, but there is no organ damage yet)
-            _damageableSystem.TryChangeDamage(args.Args.Target.Value, entity.Comp.Damage, true);
+            // Sunrise edit start - постепенный расход жидкости и никотиновый эффект
+            var puffAmount = Content.Shared.FixedPoint.FixedPoint2.Min(Content.Shared.FixedPoint.FixedPoint2.New(entity.Comp.PuffVolume), args.Solution.Volume);
+            var inhaled = args.Solution.SplitSolution(puffAmount);
+
+            // Если раствор содержал никотин — утоляем зависимость
+            if (inhaled.GetTotalPrototypeQuantity("Nicotine") > Content.Shared.FixedPoint.FixedPoint2.Zero)
+            {
+                _nicotine.RegisterPuff(args.Args.Target.Value);
+            }
+
+            if (TryComp<BloodstreamComponent>(args.Args.Target.Value, out var bloodstream))
+            {
+                _reactiveSystem.DoEntityReaction(args.Args.Target.Value, inhaled, ReactionMethod.Ingestion);
+                _bloodstreamSystem.TryAddToBloodstream((args.Args.Target.Value, bloodstream), inhaled);
+            }
 
             var merger = new GasMixture(1) { Temperature = args.Solution.Temperature };
-            merger.SetMoles(entity.Comp.GasType, args.Solution.Volume.Value / entity.Comp.ReductionFactor);
+            merger.SetMoles(entity.Comp.GasType, puffAmount.Value / entity.Comp.ReductionFactor);
 
             _atmos.Merge(environment, merger);
 
-            args.Solution.RemoveAllSolution();
+            _audio.PlayPvs(new Robust.Shared.Audio.SoundPathSpecifier("/Audio/Effects/sparks1.ogg"), args.Args.Target.Value, Robust.Shared.Audio.AudioParams.Default.WithVolume(-4f));
+            // Sunrise edit end
 
             if (args.Forced)
             {

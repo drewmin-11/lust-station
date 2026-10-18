@@ -22,3 +22,31 @@ smoking-craving-3 = В голове пульсирует навязчивая м
 # Настроение (Mood)
 mood-effect-NicotineSatisfied = Вы ощущаете приятное никотиновое расслабление.
 mood-effect-NicotineWithdrawal = Ломка! Вам мучительно не хватает сигареты, пальцы дрожат.
+
+# Шлемы, вакуум, пепельницы и бычки
+smoking-puff-helmet-blocked = Шлем или маска мешают поднести сигарету ко рту!
+smoking-extinguish-vacuum = Сигарета гаснет из-за отсутствия кислорода!
+smoking-ashtray-extinguish = Вы аккуратно тушите сигарету о пепельницу.
+smoking-verb-crush-boot = Затушить ботинком
+smoking-crush-boot-popup = {CAPITALIZE(THE($user))} решительно наступает на {THE($item)} и тушит подошвой ботинка.
+
+# Вейпы и картриджи
+vape-component-no-cartridge = В вейпе нет картриджа! Вставьте картридж с жидкостью.
+vape-cartridge-insert-verb = Вставить картридж
+vape-cartridge-eject-verb = Извлечь картридж
+
+# Медицина (пластыри)
+smoking-patch-applied = Вы плотно наклеиваете никотиновый пластырь на кожу.
+smoking-patch-expired = Никотиновый пластырь исчерпал своё действие и отклеился.
+
+# Названия сущностей
+ent-VapeCartridgeEmpty = пустой картридж для вейпа
+ent-VapeCartridgeMint = мятный картридж для вейпа
+ent-VapeCartridgeBerry = ягодный картридж для вейпа
+ent-VapeCartridgeTobacco = табачный картридж для вейпа
+ent-VapeJuiceMint = флакон жидкости для вейпа (мята)
+ent-VapeJuiceBerry = флакон жидкости для вейпа (лесные ягоды)
+ent-VapeJuiceTobacco = флакон жидкости для вейпа (классический табак)
+ent-NicotinePatch = никотиновый пластырь
+ent-FoodNicotineGum = никотиновая жвачка
+

@@ -521,4 +521,11 @@
         type: Local
         messages: [ "smoke-cough-popup" ]
         probability: 0.70
+      - !type:AdjustReagent
+        conditions:
+        - !type:ReagentCondition
+          reagent: TobaccoSmoke
+          min: 0.05
+        reagent: Nicotine
+        amount: 0.05
 

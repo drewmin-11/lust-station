@@ -1,0 +1,201 @@
+- type: entity
+  parent: [BaseItem, SolutionSmokable, SolutionTiny]
+  id: BaseVapeCartridge
+  abstract: true
+  components:
+  - type: Tag
+    tags:
+    - VapeCartridge
+  - type: Item
+    size: Tiny
+  - type: RefillableSolution
+    solution: smokable
+  - type: ExaminableSolution
+    solution: smokable
+  - type: Sprite
+    sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/cartridge.rsi
+
+- type: entity
+  parent: BaseVapeCartridge
+  id: VapeCartridgeEmpty
+  name: empty vape cartridge
+  description: An empty 15u refillable pod cartridge for electronic vaporizers. Can be refilled with any vape e-liquid.
+  components:
+  - type: Sprite
+    state: cartridge-empty
+
+- type: entity
+  parent: BaseVapeCartridge
+  id: VapeCartridgeMint
+  name: mint vape cartridge
+  description: A 15u pod cartridge filled with refreshing menthol and nicotine e-liquid.
+  components:
+  - type: Sprite
+    state: cartridge-mint
+  - type: SolutionContainerManager
+    solutions:
+      smokable:
+        maxVol: 15
+        reagents:
+        - ReagentId: Water
+          Quantity: 8
+        - ReagentId: Nicotine
+          Quantity: 4
+        - ReagentId: JuiceLime
+          Quantity: 3
+
+- type: entity
+  parent: BaseVapeCartridge
+  id: VapeCartridgeBerry
+  name: berry vape cartridge
+  description: A 15u pod cartridge filled with sweet forest berries and nicotine e-liquid.
+  components:
+  - type: Sprite
+    state: cartridge-berry
+  - type: SolutionContainerManager
+    solutions:
+      smokable:
+        maxVol: 15
+        reagents:
+        - ReagentId: Water
+          Quantity: 8
+        - ReagentId: Nicotine
+          Quantity: 4
+        - ReagentId: JuiceBerry
+          Quantity: 3
+
+- type: entity
+  parent: BaseVapeCartridge
+  id: VapeCartridgeTobacco
+  name: tobacco vape cartridge
+  description: A 15u pod cartridge filled with rich cured tobacco and nicotine e-liquid.
+  components:
+  - type: Sprite
+    state: cartridge-tobacco
+  - type: SolutionContainerManager
+    solutions:
+      smokable:
+        maxVol: 15
+        reagents:
+        - ReagentId: Water
+          Quantity: 8
+        - ReagentId: Nicotine
+          Quantity: 5
+        - ReagentId: Coffee
+          Quantity: 2
+
+# Флаконы с жидкостью для заправки вейпа (30u)
+- type: entity
+  parent: [BaseItem, SolutionDrink, SolutionSmall]
+  id: BaseVapeJuice
+  abstract: true
+  components:
+  - type: Item
+    size: Small
+  - type: RefillableSolution
+    solution: drink
+  - type: DrainableSolution
+    solution: drink
+  - type: ExaminableSolution
+    solution: drink
+  - type: Sprite
+    sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/vape_juice.rsi
+
+- type: entity
+  parent: BaseVapeJuice
+  id: VapeJuiceMint
+  name: mint e-liquid bottle
+  description: A 30ml bottle of cool mint and lime e-liquid with nicotine for refilling vape pods.
+  components:
+  - type: Sprite
+    state: bottle-mint
+  - type: SolutionContainerManager
+    solutions:
+      drink:
+        maxVol: 30
+        reagents:
+        - ReagentId: Water
+          Quantity: 18
+        - ReagentId: Nicotine
+          Quantity: 8
+        - ReagentId: JuiceLime
+          Quantity: 4
+
+- type: entity
+  parent: BaseVapeJuice
+  id: VapeJuiceBerry
+  name: berry e-liquid bottle
+  description: A 30ml bottle of sweet berry mix e-liquid with nicotine for refilling vape pods.
+  components:
+  - type: Sprite
+    state: bottle-berry
+  - type: SolutionContainerManager
+    solutions:
+      drink:
+        maxVol: 30
+        reagents:
+        - ReagentId: Water
+          Quantity: 18
+        - ReagentId: Nicotine
+          Quantity: 8
+        - ReagentId: JuiceBerry
+          Quantity: 4
+
+- type: entity
+  parent: BaseVapeJuice
+  id: VapeJuiceTobacco
+  name: tobacco e-liquid bottle
+  description: A 30ml bottle of classic aromatic tobacco e-liquid with high nicotine content for refilling vape pods.
+  components:
+  - type: Sprite
+    state: bottle-tobacco
+  - type: SolutionContainerManager
+    solutions:
+      drink:
+        maxVol: 30
+        reagents:
+        - ReagentId: Water
+          Quantity: 18
+        - ReagentId: Nicotine
+          Quantity: 10
+        - ReagentId: Coffee
+          Quantity: 2
+
+# Никотиновый пластырь
+- type: entity
+  parent: BaseItem
+  id: NicotinePatch
+  name: nicotine transdermal patch
+  description: A medicated adhesive patch that slowly delivers nicotine into the bloodstream through the skin, relieving withdrawal cravings for 5 minutes.
+  components:
+  - type: NicotinePatchItem
+    useTime: 1.5
+  - type: Item
+    size: Tiny
+  - type: Sprite
+    sprite: _Sunrise/Objects/Specific/Medical/nicotine_patch.rsi
+    state: pack
+
+# Никотиновая жвачка
+- type: entity
+  parent: FoodBase
+  id: FoodNicotineGum
+  name: nicotine chewing gum
+  description: Medicated minty chewing gum infused with nicotine to instantly satisfy smoke cravings anywhere.
+  components:
+  - type: Item
+    size: Tiny
+  - type: Sprite
+    sprite: _Sunrise/Objects/Consumable/Smokeables/nicotine_gum.rsi
+    state: pack
+  - type: SolutionContainerManager
+    solutions:
+      food:
+        maxVol: 6
+        reagents:
+        - ReagentId: Nicotine
+          Quantity: 3
+        - ReagentId: Sugar
+          Quantity: 2
+        - ReagentId: JuiceLime
+          Quantity: 1
