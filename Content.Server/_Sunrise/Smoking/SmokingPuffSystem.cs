@@ -21,6 +21,7 @@ using Content.Shared.Jittering;
 using Content.Shared.Nutrition.Components;
 using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
+using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
@@ -129,9 +130,9 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         var isSelf = (target == user);
         var delay = isSelf ? entity.Comp.PuffDelay : entity.Comp.ForcedPuffDelay;
 
-        // 1. Сочный звук затяжки тлеющим табаком в момент начала
+        // 1. Сочный и плавный звук затяжки тлеющим табаком в момент начала
         if (entity.Comp.PuffSound != null)
-            _audio.PlayPvs(entity.Comp.PuffSound, entity.Owner);
+            _audio.PlayPvs(entity.Comp.PuffSound, entity.Owner, AudioParams.Default.WithVolume(-1.5f).WithVariation(0.04f));
 
         if (isSelf)
         {
@@ -239,9 +240,9 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _atmos.Merge(environment, merger);
         }
 
-        // 3. Звук выдоха дыма (после окончания затяжки)
+        // 3. Мягкий звук выдоха дыма (после окончания затяжки)
         if (entity.Comp.ExhaleSound != null)
-            _audio.PlayPvs(entity.Comp.ExhaleSound, target);
+            _audio.PlayPvs(entity.Comp.ExhaleSound, target, AudioParams.Default.WithVolume(-2.0f).WithVariation(0.04f));
 
         // 4. Проверка на "паровоз" (слишком частые затяжки подряд)
         var curTime = _timing.CurTime;
