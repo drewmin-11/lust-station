@@ -75,13 +75,13 @@ namespace Content.Shared.Nutrition.Components
         /// Звук глубокой затяжки тлеющим табаком при начале затяжки.
         /// </summary>
         [DataField("puffSound")]
-        public SoundSpecifier? PuffSound = new SoundCollectionSpecifier("CigarettePuff");
+        public SoundSpecifier? PuffSound = new SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_puff.ogg");
 
         /// <summary>
-        /// Звук выпуска дыма после затяжки.
+        /// Звук выдоха табачного дыма после затяжки.
         /// </summary>
         [DataField("exhaleSound")]
-        public SoundSpecifier? ExhaleSound;
+        public SoundSpecifier? ExhaleSound = new SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_exhale.ogg");
         // Sunrise added end
     }
 }

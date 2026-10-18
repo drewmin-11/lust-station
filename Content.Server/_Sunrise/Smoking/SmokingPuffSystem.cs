@@ -1,5 +1,6 @@
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Body.Systems;
+using Content.Server.Chat.Systems;
 using Content.Server.DoAfter;
 using Content.Server.Nutrition.EntitySystems;
 using Content.Server.Popups;
@@ -16,11 +17,13 @@ using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Inventory;
+using Content.Shared.Jittering;
 using Content.Shared.Nutrition.Components;
 using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Random;
+using Robust.Shared.Timing;
 
 namespace Content.Server._Sunrise.Smoking;
 
@@ -41,6 +44,12 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private IRobustRandom _random = default!;
     [Dependency] private InventorySystem _inventory = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
+    [Dependency] private IGameTiming _timing = default!;
+    [Dependency] private ChatSystem _chat = default!;
+    [Dependency] private SharedJitteringSystem _jittering = default!;
+    [Dependency] private NicotineAddictionSystem _nicotine = default!;
+
+    private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
 
     public override void Initialize()
     {
@@ -120,7 +129,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         var isSelf = (target == user);
         var delay = isSelf ? entity.Comp.PuffDelay : entity.Comp.ForcedPuffDelay;
 
-        // Сочный звук тления углей и вдоха
+        // 1. Сочный звук затяжки тлеющим табаком в момент начала
         if (entity.Comp.PuffSound != null)
             _audio.PlayPvs(entity.Comp.PuffSound, entity.Owner);
 
@@ -188,7 +197,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         var target = args.Args.Target.Value;
         var user = args.Args.User;
 
-        // При отмене DoAfter (например игрок прервал или получил урон) возвращаем сигарету обратно в руку
+        // При отмене DoAfter возвращаем сигарету обратно в руку
         if (args.Cancelled)
         {
             ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
@@ -230,35 +239,53 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _atmos.Merge(environment, merger);
         }
 
-        // 3. Звук выдоха дыма (если задан)
+        // 3. Звук выдоха дыма (после окончания затяжки)
         if (entity.Comp.ExhaleSound != null)
             _audio.PlayPvs(entity.Comp.ExhaleSound, target);
 
-        // 4. Поп-ап сообщение и шанс колечка дыма
+        // 4. Проверка на "паровоз" (слишком частые затяжки подряд)
+        var curTime = _timing.CurTime;
+        var choked = false;
+        if (_lastPuffTime.TryGetValue(target, out var lastTime) && (curTime - lastTime) < TimeSpan.FromSeconds(4.5f))
+        {
+            choked = true;
+            _chat.TryEmoteWithChat(target, "Cough");
+            _popup.PopupEntity(Loc.GetString("smoking-puff-choke"), target, target);
+            _jittering.DoJitter(target, TimeSpan.FromSeconds(1.5f), true, amplitude: 4f, frequency: 4f);
+        }
+        _lastPuffTime[target] = curTime;
+
+        // 5. Поп-ап сообщение и шанс колечка дыма (если не подавился)
         var isSelf = (target == user);
-        if (isSelf && _random.Prob(0.25f))
+        if (!choked)
         {
-            _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
-        }
-        else if (isSelf)
-        {
-            _popup.PopupEntity(Loc.GetString("smoking-puff-success-self", ("item", entity.Owner)), user, user);
-        }
-        else
-        {
-            var userName = Identity.Entity(user, EntityManager);
-            var targetName = Identity.Entity(target, EntityManager);
-            _popup.PopupEntity(Loc.GetString("smoking-puff-success-other", ("user", userName), ("target", targetName), ("item", entity.Owner)), target);
+            if (isSelf && _random.Prob(0.25f))
+            {
+                _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
+            }
+            else if (isSelf)
+            {
+                _popup.PopupEntity(Loc.GetString("smoking-puff-success-self", ("item", entity.Owner)), user, user);
+            }
+            else
+            {
+                var userName = Identity.Entity(user, EntityManager);
+                var targetName = Identity.Entity(target, EntityManager);
+                _popup.PopupEntity(Loc.GetString("smoking-puff-success-other", ("user", userName), ("target", targetName), ("item", entity.Owner)), target);
+            }
         }
 
-        // 5. Если раствор закончился — сигарета истлела
+        // 6. Регистрируем воздействие никотина и зависимость
+        _nicotine.RegisterPuff(target);
+
+        // 7. Если раствор закончился — сигарета истлела
         if (solution.Volume <= FixedPoint2.Zero)
         {
             _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
             _popup.PopupEntity(Loc.GetString("smoking-puff-burnt-out", ("item", entity.Owner)), target, user);
         }
 
-        // 6. Возвращаем сигарету/окурок обратно в руку
+        // 8. Возвращаем сигарету/окурок обратно в руку
         ReturnSmokableToHand(entity.Owner, user, target, args.ReturnToHand, args.HandId);
 
         args.Handled = true;

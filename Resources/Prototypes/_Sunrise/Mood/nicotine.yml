@@ -1,0 +1,10 @@
+- type: moodEffect
+  id: NicotineSatisfied
+  moodChange: 4
+  timeout: 300
+  category: "Nicotine"
+
+- type: moodEffect
+  id: NicotineWithdrawal
+  moodChange: -8
+  category: "Nicotine"

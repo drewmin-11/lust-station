@@ -506,19 +506,19 @@
         conditions:
         - !type:ReagentCondition
           reagent: TobaccoSmoke
-          min: 0.2
+          min: 0.1
         - !type:MetabolizerTypeCondition
           type: [ Slime ]
           inverted: true
         emote: Cough
         showInChat: true
-        probability: 0.35
+        probability: 0.70
       - !type:PopupMessage
         conditions:
         - !type:ReagentCondition
           reagent: TobaccoSmoke
-          min: 0.3
+          min: 0.1
         type: Local
         messages: [ "smoke-cough-popup" ]
-        probability: 0.35
+        probability: 0.70
 
