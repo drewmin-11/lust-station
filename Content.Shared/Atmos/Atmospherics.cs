@@ -223,7 +223,7 @@ namespace Content.Shared.Atmos
         /// <summary>
         ///     Total number of gases. Increase this if you want to add more!
         /// </summary>
-        public const int TotalNumberOfGases = 22; //SunRise edit
+        public const int TotalNumberOfGases = 23; // Sunrise-Edit: Добавлен TobaccoSmoke
 
         /// <summary>
         ///     This is the actual length of the gases arrays in mixtures.
@@ -420,7 +420,8 @@ namespace Content.Shared.Atmos
         Helium = 18,
         AntiNoblium = 19,
         Electrovae = 20,
-        ChargedElectrovae = 21
+        ChargedElectrovae = 21,
+        TobaccoSmoke = 22 // Sunrise-Edit: Сигаретный дым
         //Sunrise - End
     }
 }

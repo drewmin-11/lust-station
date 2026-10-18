@@ -1,0 +1,10 @@
+smoking-puff-unlit = You need to light {THE($item)} first!
+smoking-puff-empty = {CAPITALIZE(THE($item))} is empty!
+smoking-puff-start-self = You take a drag from {THE($item)}...
+smoking-puff-start-target = {CAPITALIZE(THE($user))} brings {THE($item)} to your lips...
+smoking-puff-start-user = You bring {THE($item)} to {THE($target)}'s lips...
+smoking-puff-success-self = You take a satisfying puff of {THE($item)} and exhale a cloud of smoke.
+smoking-puff-success-other = {CAPITALIZE(THE($user))} gives {THE($target)} a puff of {THE($item)} and they exhale smoke.
+smoking-puff-smoke-ring = {CAPITALIZE(THE($user))} takes a deep puff and blows a smooth smoke ring!
+smoking-puff-burnt-out = {CAPITALIZE(THE($item))} burns out completely.
+smoking-light-from-other = {CAPITALIZE(THE($user))} lights {THE($target)} from {THE($used)}.

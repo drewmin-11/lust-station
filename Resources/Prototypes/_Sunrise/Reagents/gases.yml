@@ -490,3 +490,35 @@
       methods: [ Touch ]
       effects:
       - !type:Flammable
+
+- type: reagent
+  id: TobaccoSmoke
+  name: reagent-name-tobacco-smoke
+  desc: reagent-desc-tobacco-smoke
+  physicalDesc: reagent-physical-desc-gaseous
+  flavor: bitter
+  color: "#8A9EA7"
+  recognizable: true
+  metabolisms:
+    Respiration:
+      effects:
+      - !type:Emote
+        conditions:
+        - !type:ReagentCondition
+          reagent: TobaccoSmoke
+          min: 0.2
+        - !type:MetabolizerTypeCondition
+          type: [ Slime ]
+          inverted: true
+        emote: Cough
+        showInChat: true
+        probability: 0.35
+      - !type:PopupMessage
+        conditions:
+        - !type:ReagentCondition
+          reagent: TobaccoSmoke
+          min: 0.3
+        type: Local
+        messages: [ "smoke-cough-popup" ]
+        probability: 0.35
+

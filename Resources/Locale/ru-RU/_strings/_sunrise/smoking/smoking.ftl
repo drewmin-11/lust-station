@@ -1,0 +1,10 @@
+smoking-puff-unlit = Сначала нужно прикурить {THE($item)}!
+smoking-puff-empty = В {THE($item)} больше ничего не осталось!
+smoking-puff-start-self = Вы делаете затяжку из {THE($item)}...
+smoking-puff-start-target = {CAPITALIZE(THE($user))} подносит {THE($item)} к вашим губам...
+smoking-puff-start-user = Вы подносите {THE($item)} к губам {THE($target)}...
+smoking-puff-success-self = Вы смачно затягиваетесь {THE($item)} и выпускаете клуб сизого дыма.
+smoking-puff-success-other = {CAPITALIZE(THE($user))} даёт затянуться {THE($item)} {THE($target)}, и тот выдыхает клуб дыма.
+smoking-puff-smoke-ring = {CAPITALIZE(THE($user))} делает глубокую затяжку и виртуозно выпускает красивое колечко дыма!
+smoking-puff-burnt-out = {CAPITALIZE(THE($item))} полностью истлевает.
+smoking-light-from-other = {CAPITALIZE(THE($user))} прикуривает {THE($target)} от {THE($used)}.

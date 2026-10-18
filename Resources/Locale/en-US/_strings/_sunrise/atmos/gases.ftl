@@ -11,3 +11,4 @@ gas-helium-abbreviation = He₂
 gas-anti-noblium-abbreviation = AN₂
 gas-electrovae-abbreviation = E
 gas-charged-electrovae-abbreviation = E₂
+gas-tobacco-smoke-abbreviation = TS

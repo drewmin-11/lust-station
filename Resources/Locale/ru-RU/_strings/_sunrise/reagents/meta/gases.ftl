@@ -47,3 +47,7 @@ gases-helium = Гелий
 gases-anti-noblium = Анти-Ноблиум
 gases-electrovae = Электровей
 gases-charged-electrovae = Заряженный Электровей
+gases-tobacco-smoke = Сигаретный дым
+reagent-name-tobacco-smoke = сигаретный дым
+reagent-desc-tobacco-smoke = Густой табачный дым с запахом смолы и никотина. При вдыхании в больших количествах вызывает приступ кашля.
+smoke-cough-popup = Вы заходитесь кашлем от едкого сигаретного дыма!

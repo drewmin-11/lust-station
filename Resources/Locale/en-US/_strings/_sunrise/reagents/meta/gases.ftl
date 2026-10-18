@@ -46,3 +46,7 @@ gases-helium = Helium
 gases-anti-noblium = Anti-Noblium
 gases-electrovae = Electrovae
 gases-charged-electrovae = Charged electrovae
+gases-tobacco-smoke = Tobacco smoke
+reagent-name-tobacco-smoke = tobacco smoke
+reagent-desc-tobacco-smoke = Dense tobacco smoke smelling of tar and nicotine. Causes coughing when inhaled in high amounts.
+smoke-cough-popup = You cough from the acrid tobacco smoke!
