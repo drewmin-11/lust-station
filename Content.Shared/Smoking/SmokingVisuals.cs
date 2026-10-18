@@ -1,4 +1,4 @@
-﻿using Robust.Shared.Serialization;
+using Robust.Shared.Serialization;
 
 namespace Content.Shared.Smoking
 {
@@ -6,5 +6,8 @@ namespace Content.Shared.Smoking
     public enum SmokingVisuals : byte
     {
         Smoking,
+        // Sunrise-Start: визуальное состояние вставленного в вейп картриджа
+        CartridgeState,
+        // Sunrise-End
     }
 }

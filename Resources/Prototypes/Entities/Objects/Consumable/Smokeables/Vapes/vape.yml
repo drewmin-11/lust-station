@@ -6,8 +6,20 @@
   components:
   - type: Sprite
     sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/vape.rsi
-    state: icon
-  # Sunrise edit start - слот картриджа
+    layers:
+    - state: icon
+      map: ["base"]
+  # Sunrise edit start - слот картриджа и смена спрайта
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.SmokingVisuals.CartridgeState:
+        base:
+          empty: { state: empty }
+          icon: { state: icon }
+          vape-mint: { state: vape-mint }
+          vape-berry: { state: vape-berry }
+          vape-tobacco: { state: vape-tobacco }
   - type: ItemSlots
     slots:
       cartridge:

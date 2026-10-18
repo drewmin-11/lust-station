@@ -58,7 +58,7 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         /// </summary>
         [DataField("vaporMolesPerPuff")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float VaporMolesPerPuff { get; set; } = 3.5f;
+        public float VaporMolesPerPuff { get; set; } = 45.0f;
 
         /// <summary>
         /// Звук затяжки вейпом (шипение спирали и плотный обдув).

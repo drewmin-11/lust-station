@@ -14,6 +14,10 @@ using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Nutrition;
 using Content.Shared.Nutrition.EntitySystems;
+using Content.Shared.Smoking;
+using Content.Shared.Throwing;
+using Robust.Shared.Containers;
+using Robust.Shared.Random;
 
 /// <summary>
 /// System for vapes
@@ -30,13 +34,18 @@ namespace Content.Server.Nutrition.EntitySystems
         [Dependency] private PopupSystem _popupSystem = default!;
         // Sunrise-Start
         [Dependency] private Content.Server._Sunrise.Smoking.NicotineAddictionSystem _nicotine = default!;
+        [Dependency] private IRobustRandom _random = default!;
+        [Dependency] private ThrowingSystem _throwing = default!;
         // Sunrise-End
 
         private void InitializeVapes()
         {
+            SubscribeLocalEvent<VapeComponent, MapInitEvent>(OnVapeMapInit);
             SubscribeLocalEvent<VapeComponent, AfterInteractEvent>(OnVapeInteraction);
             SubscribeLocalEvent<VapeComponent, VapeDoAfterEvent>(OnVapeDoAfter);
             SubscribeLocalEvent<VapeComponent, GotEmaggedEvent>(OnEmagged);
+            SubscribeLocalEvent<VapeComponent, EntInsertedIntoContainerMessage>(OnVapeInserted);
+            SubscribeLocalEvent<VapeComponent, EntRemovedFromContainerMessage>(OnVapeRemoved);
         }
 
         private void OnVapeInteraction(Entity<VapeComponent> entity, ref AfterInteractEvent args)
@@ -209,10 +218,87 @@ namespace Content.Server.Nutrition.EntitySystems
             }
             else
             {
-                _popupSystem.PopupEntity(
-                    Loc.GetString("vape-component-vape-success"), args.Args.Target.Value,
-                    args.Args.Target.Value);
+                // Sunrise edit: шанс 35% выпустить красивое летящее колечко пара
+                if (_random.Prob(0.35f))
+                {
+                    _popupSystem.PopupEntity(
+                        Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(args.Args.Target.Value, EntityManager))),
+                        args.Args.Target.Value);
+
+                    SpawnSmokeRing(args.Args.Target.Value);
+                }
+                else
+                {
+                    _popupSystem.PopupEntity(
+                        Loc.GetString("vape-component-vape-success"), args.Args.Target.Value,
+                        args.Args.Target.Value);
+                }
             }
+        }
+
+        /// <summary>
+        /// Создает и запускает летящее колечко пара в направлении взгляда персонажа.
+        /// </summary>
+        private void SpawnSmokeRing(EntityUid user)
+        {
+            var userXform = Transform(user);
+            var ring = Spawn("EffectSmokeRing", userXform.Coordinates);
+            var dir = userXform.LocalRotation.ToWorldVec();
+            if (dir.LengthSquared() > 0.001f)
+            {
+                dir = System.Numerics.Vector2.Normalize(dir);
+                _throwing.TryThrow(ring, dir * 1.5f, 1.5f, user: user, doSpin: false);
+            }
+        }
+
+        private void OnVapeMapInit(Entity<VapeComponent> entity, ref MapInitEvent args)
+        {
+            UpdateVapeAppearance(entity);
+        }
+
+        private void OnVapeInserted(Entity<VapeComponent> entity, ref EntInsertedIntoContainerMessage args)
+        {
+            if (args.Container.ID == entity.Comp.CartridgeSlot)
+            {
+                UpdateVapeAppearance(entity);
+            }
+        }
+
+        private void OnVapeRemoved(Entity<VapeComponent> entity, ref EntRemovedFromContainerMessage args)
+        {
+            if (args.Container.ID == entity.Comp.CartridgeSlot)
+            {
+                UpdateVapeAppearance(entity);
+            }
+        }
+
+        /// <summary>
+        /// Обновляет внешний вид вейпа в зависимости от вставленного картриджа.
+        /// </summary>
+        public void UpdateVapeAppearance(Entity<VapeComponent> entity)
+        {
+            if (!TryComp<Content.Shared.Containers.ItemSlots.ItemSlotsComponent>(entity.Owner, out var itemSlots) ||
+                !_itemSlotsSystem.TryGetSlot(entity.Owner, entity.Comp.CartridgeSlot, out var slot, itemSlots))
+            {
+                return;
+            }
+
+            string state = "empty";
+
+            if (slot.Item != null)
+            {
+                var meta = MetaData(slot.Item.Value);
+                var protoId = meta.EntityPrototype?.ID;
+                state = protoId switch
+                {
+                    "VapeCartridgeMint" => "vape-mint",
+                    "VapeCartridgeBerry" => "vape-berry",
+                    "VapeCartridgeTobacco" => "vape-tobacco",
+                    _ => "icon"
+                };
+            }
+
+            _appearance.SetData(entity.Owner, SmokingVisuals.CartridgeState, state);
         }
 
         private void OnEmagged(Entity<VapeComponent> entity, ref GotEmaggedEvent args)

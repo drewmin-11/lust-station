@@ -25,6 +25,7 @@ using Content.Shared.Nutrition.EntitySystems;
 using Content.Shared.Smoking;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
+using Content.Shared.Throwing;
 using Content.Shared.Verbs;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -55,6 +56,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private SharedJitteringSystem _jittering = default!;
     [Dependency] private NicotineAddictionSystem _nicotine = default!;
     [Dependency] private StorageSystem _storage = default!;
+    [Dependency] private ThrowingSystem _throwing = default!;
 
     private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
 
@@ -297,6 +299,14 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             if (isSelf && _random.Prob(0.25f))
             {
                 _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
+                var userXform = Transform(user);
+                var ring = Spawn("EffectSmokeRing", userXform.Coordinates);
+                var dir = userXform.LocalRotation.ToWorldVec();
+                if (dir.LengthSquared() > 0.001f)
+                {
+                    dir = System.Numerics.Vector2.Normalize(dir);
+                    _throwing.TryThrow(ring, dir * 1.5f, 1.5f, user: user, doSpin: false);
+                }
             }
             else if (isSelf)
             {

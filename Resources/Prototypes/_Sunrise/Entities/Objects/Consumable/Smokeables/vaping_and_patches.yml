@@ -199,3 +199,21 @@
           Quantity: 2
         - ReagentId: JuiceLime
           Quantity: 1
+
+# Визуальный эффект летящего колечка дыма/пара
+- type: entity
+  id: EffectSmokeRing
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 1.5
+  - type: Sprite
+    noRot: true
+    drawdepth: Effects
+    sprite: _Sunrise/Effects/smoke_ring.rsi
+    state: ring
+  - type: EffectVisuals
+  - type: Tag
+    tags:
+    - HideContextMenu
+  - type: AnimationPlayer
