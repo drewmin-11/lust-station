@@ -70,7 +70,7 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         /// Звук выдоха клубов пара.
         /// </summary>
         [DataField("exhaleSound")]
-        public Robust.Shared.Audio.SoundSpecifier? ExhaleSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_exhale.ogg");
+        public Robust.Shared.Audio.SoundSpecifier? ExhaleSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_exhale.ogg");
 
         /// <summary>
         /// Прототип действия запуска колечка пара.
