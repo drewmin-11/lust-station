@@ -22,6 +22,12 @@ smoking-craving-3 = A persistent urge to smoke pulses in your head. It's time fo
 # Mood effects
 mood-effect-NicotineSatisfied = You feel a pleasant nicotine relaxation.
 mood-effect-NicotineWithdrawal = Withdrawal! You desperately need a cigarette, and your hands are shaking.
+mood-effect-CannabisSatisfied = Aromatic herbal smoke gave you deep tranquility and pleasant peace.
+
+# Herbal smoking
+smoking-puff-herb-start-self = You take a deep puff from {THE($item)}, inhaling herbal smoke...
+smoking-puff-herb-success-self = You take a rich puff from {THE($item)} and exhale aromatic herbal smoke, feeling mellow and relaxed.
+smoking-puff-herb-rainbow-success-self = You take a puff from the rainbow joint... Colors around you momentarily shimmer and glow!
 
 # Helmets, vacuum, ashtrays and butts
 smoking-puff-helmet-blocked = A helmet or mask is preventing you from reaching your mouth!
@@ -52,20 +58,16 @@ lighter-trick-fail-burn = {CAPITALIZE(THE($user))} drops the lit {THE($item)}, b
 lighter-trick-fail-drop = {CAPITALIZE(THE($user))} tries to perform a trick with {THE($item)}, but fumbles and drops it on the floor!
 
 # Entity names and descriptions
-ent-VapeCartridgeEmpty = empty vape cartridge
-    .desc = An empty 15u refillable pod cartridge for electronic vaporizers. Can be refilled with any vape e-liquid.
-ent-VapeCartridgeMint = mint vape cartridge
-    .desc = A 15u pod cartridge filled with refreshing menthol and nicotine e-liquid.
-ent-VapeCartridgeBerry = berry vape cartridge
-    .desc = A 15u pod cartridge filled with sweet forest berries and nicotine e-liquid.
-ent-VapeCartridgeTobacco = tobacco vape cartridge
-    .desc = A 15u pod cartridge filled with rich cured tobacco and nicotine e-liquid.
+ent-VapeCartridge = vape cartridge
+    .desc = A refillable 15u pod cartridge for electronic vaporizers. Can be refilled with vape e-liquid.
 ent-VapeJuiceMint = mint e-liquid bottle
     .desc = A 30ml bottle of cool mint and lime e-liquid with nicotine for refilling vape pods.
 ent-VapeJuiceBerry = berry e-liquid bottle
     .desc = A 30ml bottle of sweet berry burst e-liquid with nicotine for refilling vape pods.
 ent-VapeJuiceTobacco = tobacco e-liquid bottle
     .desc = A 30ml bottle of robust cured tobacco e-liquid with nicotine for refilling vape pods.
+ent-VapeJuiceBanana = zapravka banana bubblegum e-liquid bottle
+    .desc = A 30ml bottle of sweet banana and bubblegum e-liquid with nicotine for refilling vape pods.
 ent-NicotinePatch = nicotine patch
     .desc = A transdermal patch releasing a steady dose of nicotine into the bloodstream to ease cravings.
 ent-FoodNicotineGum = nicotine chewing gum
@@ -73,7 +75,15 @@ ent-FoodNicotineGum = nicotine chewing gum
 
 # Smoke ring action
 action-blow-smoke-ring = Blow smoke ring
-action-blow-smoke-ring-desc = Take a quick puff and blow a beautiful flying smoke ring forward.
+action-blow-smoke-ring-desc = Take a deep drag and blow a flying smoke ring towards target.
 smoking-verb-blow-smoke-ring = Blow smoke ring
+smoking-puff-ring-start = You take a deep drag, preparing to blow a smoke ring...
+vape-puff-ring-start = You take a deep vape puff, preparing to blow a vapor ring...
+
+# Refill vape
+vape-component-cartridge-full = The vape cartridge is already full!
+vape-component-juice-empty = The bottle has no liquid left!
+vape-component-cartridge-refilled = You refilled the vape cartridge with {$amount}u.
+
 
 

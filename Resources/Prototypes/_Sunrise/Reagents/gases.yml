@@ -497,7 +497,7 @@
   desc: reagent-desc-tobacco-smoke
   physicalDesc: reagent-physical-desc-gaseous
   flavor: bitter
-  color: "#8A9EA7"
+  color: "#33373B"
   recognizable: true
   metabolisms:
     Respiration:

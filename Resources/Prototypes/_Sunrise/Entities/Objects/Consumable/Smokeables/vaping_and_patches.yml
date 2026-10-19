@@ -1,88 +1,46 @@
 - type: entity
   parent: [BaseItem, SolutionSmokable, SolutionTiny]
-  id: BaseVapeCartridge
-  abstract: true
+  id: VapeCartridge
+  name: vape cartridge
+  description: A 15u refillable pod cartridge for electronic vaporizers. Can be refilled with any vape e-liquid.
   components:
   - type: Tag
     tags:
     - VapeCartridge
+  - type: VapeCartridge
   - type: Item
     size: Tiny
   - type: RefillableSolution
     solution: smokable
+  - type: DrainableSolution
+    solution: smokable
   - type: ExaminableSolution
     solution: smokable
+  - type: SolutionTransfer
+    maxTransferAmount: 15
+    transferAmount: 5
+    canChangeTransferAmount: true
   - type: Sprite
     sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/cartridge.rsi
-
-- type: entity
-  parent: BaseVapeCartridge
-  id: VapeCartridgeEmpty
-  name: empty vape cartridge
-  description: An empty 15u refillable pod cartridge for electronic vaporizers. Can be refilled with any vape e-liquid.
-  components:
-  - type: Sprite
-    state: cartridge-empty
-
-- type: entity
-  parent: BaseVapeCartridge
-  id: VapeCartridgeMint
-  name: mint vape cartridge
-  description: A 15u pod cartridge filled with refreshing menthol and nicotine e-liquid.
-  components:
-  - type: Sprite
-    state: cartridge-mint
-  - type: SolutionContainerManager
-    solutions:
-      smokable:
-        maxVol: 15
-        reagents:
-        - ReagentId: Water
-          Quantity: 8
-        - ReagentId: Nicotine
-          Quantity: 4
-        - ReagentId: JuiceLime
-          Quantity: 3
-
-- type: entity
-  parent: BaseVapeCartridge
-  id: VapeCartridgeBerry
-  name: berry vape cartridge
-  description: A 15u pod cartridge filled with sweet forest berries and nicotine e-liquid.
-  components:
-  - type: Sprite
-    state: cartridge-berry
-  - type: SolutionContainerManager
-    solutions:
-      smokable:
-        maxVol: 15
-        reagents:
-        - ReagentId: Water
-          Quantity: 8
-        - ReagentId: Nicotine
-          Quantity: 4
-        - ReagentId: JuiceBerry
-          Quantity: 3
-
-- type: entity
-  parent: BaseVapeCartridge
-  id: VapeCartridgeTobacco
-  name: tobacco vape cartridge
-  description: A 15u pod cartridge filled with rich cured tobacco and nicotine e-liquid.
-  components:
-  - type: Sprite
-    state: cartridge-tobacco
-  - type: SolutionContainerManager
-    solutions:
-      smokable:
-        maxVol: 15
-        reagents:
-        - ReagentId: Water
-          Quantity: 8
-        - ReagentId: Nicotine
-          Quantity: 5
-        - ReagentId: Coffee
-          Quantity: 2
+    scale: "0.6, 0.6"
+    layers:
+    - state: cartridge-empty
+      map: ["base"]
+  - type: Solution
+    id: smokable
+    solution:
+      maxVol: 15
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.SmokingVisuals.CartridgeState:
+        base:
+          empty: { state: cartridge-empty }
+          icon: { state: cartridge-empty }
+          vape-mint: { state: cartridge-mint }
+          vape-berry: { state: cartridge-berry }
+          vape-tobacco: { state: cartridge-tobacco }
+          vape-banana: { state: cartridge-banana }
 
 # Флаконы с жидкостью для заправки вейпа (30u)
 - type: entity
@@ -98,8 +56,17 @@
     solution: drink
   - type: ExaminableSolution
     solution: drink
+  - type: SolutionTransfer
+    maxTransferAmount: 15
+    transferAmount: 5
+    canChangeTransferAmount: true
+  - type: UserInterface
+    interfaces:
+      enum.TransferAmountUiKey.Key:
+        type: TransferAmountBoundUserInterface
   - type: Sprite
     sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/vape_juice.rsi
+    scale: "0.6, 0.6"
 
 - type: entity
   parent: BaseVapeJuice
@@ -109,17 +76,17 @@
   components:
   - type: Sprite
     state: bottle-mint
-  - type: SolutionContainerManager
-    solutions:
-      drink:
-        maxVol: 30
-        reagents:
-        - ReagentId: Water
-          Quantity: 18
-        - ReagentId: Nicotine
-          Quantity: 8
-        - ReagentId: JuiceLime
-          Quantity: 4
+  - type: Solution
+    id: drink
+    solution:
+      maxVol: 30
+      reagents:
+      - ReagentId: Water
+        Quantity: 18
+      - ReagentId: Nicotine
+        Quantity: 8
+      - ReagentId: JuiceLime
+        Quantity: 4
 
 - type: entity
   parent: BaseVapeJuice
@@ -129,17 +96,17 @@
   components:
   - type: Sprite
     state: bottle-berry
-  - type: SolutionContainerManager
-    solutions:
-      drink:
-        maxVol: 30
-        reagents:
-        - ReagentId: Water
-          Quantity: 18
-        - ReagentId: Nicotine
-          Quantity: 8
-        - ReagentId: JuiceBerry
-          Quantity: 4
+  - type: Solution
+    id: drink
+    solution:
+      maxVol: 30
+      reagents:
+      - ReagentId: Water
+        Quantity: 18
+      - ReagentId: Nicotine
+        Quantity: 8
+      - ReagentId: JuiceBerry
+        Quantity: 4
 
 - type: entity
   parent: BaseVapeJuice
@@ -149,17 +116,37 @@
   components:
   - type: Sprite
     state: bottle-tobacco
-  - type: SolutionContainerManager
-    solutions:
-      drink:
-        maxVol: 30
-        reagents:
-        - ReagentId: Water
-          Quantity: 18
-        - ReagentId: Nicotine
-          Quantity: 10
-        - ReagentId: Coffee
-          Quantity: 2
+  - type: Solution
+    id: drink
+    solution:
+      maxVol: 30
+      reagents:
+      - ReagentId: Water
+        Quantity: 18
+      - ReagentId: Nicotine
+        Quantity: 10
+      - ReagentId: Coffee
+        Quantity: 2
+
+- type: entity
+  parent: BaseVapeJuice
+  id: VapeJuiceBanana
+  name: zapravka banana bubblegum e-liquid bottle
+  description: A 30ml bottle of sweet banana and bubblegum e-liquid with nicotine for refilling vape pods.
+  components:
+  - type: Sprite
+    state: bottle-banana
+  - type: Solution
+    id: drink
+    solution:
+      maxVol: 30
+      reagents:
+      - ReagentId: Water
+        Quantity: 18
+      - ReagentId: Nicotine
+        Quantity: 8
+      - ReagentId: JuiceBanana
+        Quantity: 4
 
 # Никотиновый пластырь
 - type: entity
@@ -206,7 +193,7 @@
   categories: [ HideSpawnMenu ]
   components:
   - type: TimedDespawn
-    lifetime: 2.2
+    lifetime: 0.9
   - type: Sprite
     noRot: true
     drawdepth: Effects
@@ -224,10 +211,17 @@
         hard: false
         mask:
         - FullTileMask
+        - TableMask
+        - MobMask
         layer:
-        - ItemMask
+        - SlipLayer
+  - type: SmokeRing
+  - type: Appearance
+  - type: SmokeVisuals
   - type: EffectVisuals
   - type: Tag
     tags:
     - HideContextMenu
   - type: AnimationPlayer
+
+

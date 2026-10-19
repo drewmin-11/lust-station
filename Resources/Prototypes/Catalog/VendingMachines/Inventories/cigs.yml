@@ -10,14 +10,12 @@
     Ashtray: 4 # Sunrise-Edit
     SmokingPipeFilledTobacco: 1
     Vape: 2
-    # Sunrise edit start - картриджи, жижи, пластыри и жвачки в ShadyCigs
-    VapeCartridgeEmpty: 3
-    VapeCartridgeMint: 2
-    VapeCartridgeBerry: 2
-    VapeCartridgeTobacco: 2
-    VapeJuiceMint: 2
-    VapeJuiceBerry: 2
-    VapeJuiceTobacco: 2
+    # Sunrise edit start - картриджи, жидкости для вейпа, пластыри и жвачки в ShadyCigs
+    VapeCartridge: 8
+    VapeJuiceMint: 3
+    VapeJuiceBerry: 3
+    VapeJuiceTobacco: 3
+    VapeJuiceBanana: 3
     NicotinePatch: 4
     FoodNicotineGum: 4
     # Sunrise edit end

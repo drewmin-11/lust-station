@@ -8,3 +8,9 @@
   id: NicotineWithdrawal
   moodChange: -8
   category: "Nicotine"
+
+- type: moodEffect
+  id: CannabisSatisfied
+  moodChange: 5
+  timeout: 360
+  category: "Cannabis"

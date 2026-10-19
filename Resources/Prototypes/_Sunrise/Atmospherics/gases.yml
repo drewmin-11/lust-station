@@ -206,9 +206,10 @@
   gasOverlaySprite:
     sprite: /Textures/Effects/atmospherics.rsi
     state: water_vapor
-  gasMolesVisible: 0.05
-  gasVisibilityFactor: 6.0
-  color: '#8A9EA7'
+  gasMolesVisible: 0.02
+  gasVisibilityFactor: 8.5
+  color: '#33373B'
   reagent: TobaccoSmoke
   pricePerMole: 0.01
+
 

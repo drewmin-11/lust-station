@@ -1,3 +1,4 @@
+using System.Numerics;
 using Content.Server.Atmos.EntitySystems;
 using Content.Shared.Actions;
 
@@ -7,9 +8,11 @@ using Content.Server.DoAfter;
 using Content.Server.Nutrition.EntitySystems;
 using Content.Server.Popups;
 using Content.Server.Storage.EntitySystems;
+using Content.Shared._Sunrise.Mood;
 using Content.Shared._Sunrise.Smoking;
 using Content.Shared.Atmos;
 using Content.Shared.Body.Components;
+using Content.Shared.Buckle.Components;
 using Content.Shared.Chemistry;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Chemistry.Reagent;
@@ -31,7 +34,8 @@ using Content.Shared.Throwing;
 using Content.Shared.Verbs;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
-using Robust.Shared.Random;
+using Robust.Shared.Map;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 
@@ -43,6 +47,10 @@ namespace Content.Server._Sunrise.Smoking;
 /// </summary>
 public sealed partial class SmokingPuffSystem : EntitySystem
 {
+    private static readonly ProtoId<ReagentPrototype> ReagentNicotine = "Nicotine";
+    private static readonly ProtoId<ReagentPrototype> ReagentTHC = "THC";
+    private static readonly ProtoId<ReagentPrototype> ReagentSpaceDrugs = "SpaceDrugs";
+
     [Dependency] private DoAfterSystem _doAfter = default!;
     [Dependency] private SharedSolutionContainerSystem _solution = default!;
     [Dependency] private AtmosphereSystem _atmos = default!;
@@ -52,7 +60,6 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private IngestionSystem _ingestion = default!;
     [Dependency] private PopupSystem _popup = default!;
     [Dependency] private SharedAudioSystem _audio = default!;
-    [Dependency] private IRobustRandom _random = default!;
     [Dependency] private InventorySystem _inventory = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private IGameTiming _timing = default!;
@@ -61,7 +68,8 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     [Dependency] private NicotineAddictionSystem _nicotine = default!;
     [Dependency] private StorageSystem _storage = default!;
     [Dependency] private ThrowingSystem _throwing = default!;
-    [Dependency] private ActionContainerSystem _actionContainer = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
+    [Dependency] private SharedAppearanceSystem _appearance = default!;
 
     private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
 
@@ -72,6 +80,7 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         SubscribeLocalEvent<SmokableComponent, AfterInteractEvent>(OnAfterInteract);
         SubscribeLocalEvent<SmokableComponent, UseInHandEvent>(OnUseInHand);
         SubscribeLocalEvent<SmokableComponent, SmokablePuffDoAfterEvent>(OnPuffDoAfter);
+        SubscribeLocalEvent<SmokableComponent, SmokeRingDoAfterEvent>(OnSmokeRingDoAfter);
         SubscribeLocalEvent<SmokableComponent, InteractUsingEvent>(OnInteractUsing);
         SubscribeLocalEvent<SmokableComponent, GetVerbsEvent<AlternativeVerb>>(OnGetAlternativeVerbs);
         SubscribeLocalEvent<SmokableComponent, GetItemActionsEvent>(OnSmokableGetActions);
@@ -163,9 +172,18 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         if (entity.Comp.PuffSound != null)
             _audio.PlayPvs(entity.Comp.PuffSound, target, AudioParams.Default.WithVolume(-1.0f).WithMaxDistance(7f).WithVariation(0.04f));
 
+        var isHerb = false;
+        if (_solution.TryGetSolution(entity.Owner, entity.Comp.Solution, out _, out var peekSoln))
+        {
+            isHerb = peekSoln.ContainsPrototype(ReagentTHC) || peekSoln.ContainsPrototype(ReagentSpaceDrugs);
+        }
+
         if (isSelf)
         {
-            _popup.PopupEntity(Loc.GetString("smoking-puff-start-self", ("item", entity.Owner)), user, user);
+            if (isHerb)
+                _popup.PopupEntity(Loc.GetString("smoking-puff-herb-start-self", ("item", entity.Owner)), user, user);
+            else
+                _popup.PopupEntity(Loc.GetString("smoking-puff-start-self", ("item", entity.Owner)), user, user);
         }
         else
         {
@@ -263,9 +281,16 @@ public sealed partial class SmokingPuffSystem : EntitySystem
 
         // 1. Отщепляем порцию раствора и вводим в кровоток цели
         var puffAmount = FixedPoint2.Min(entity.Comp.PuffAmount, solution.Volume);
+        var isNicotine = false;
+        var isHerb = false;
+        var isRainbow = false;
+
         if (puffAmount > FixedPoint2.Zero)
         {
             var inhaled = _solution.SplitSolution(soln.Value, puffAmount);
+            isNicotine = inhaled.ContainsPrototype(ReagentNicotine);
+            isHerb = inhaled.ContainsPrototype(ReagentTHC);
+            isRainbow = inhaled.ContainsPrototype(ReagentSpaceDrugs);
 
             if (TryComp<BloodstreamComponent>(target, out var bloodstream))
             {
@@ -306,7 +331,12 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         {
             if (isSelf)
             {
-                _popup.PopupEntity(Loc.GetString("smoking-puff-success-self", ("item", entity.Owner)), user, user);
+                if (isRainbow)
+                    _popup.PopupEntity(Loc.GetString("smoking-puff-herb-rainbow-success-self"), user, user);
+                else if (isHerb)
+                    _popup.PopupEntity(Loc.GetString("smoking-puff-herb-success-self", ("item", entity.Owner)), user, user);
+                else
+                    _popup.PopupEntity(Loc.GetString("smoking-puff-success-self", ("item", entity.Owner)), user, user);
             }
             else
             {
@@ -316,13 +346,23 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             }
         }
 
-        // 6. Регистрируем воздействие никотина и зависимость
-        _nicotine.RegisterPuff(target);
+        // 6. Регистрируем воздействие никотина ТОЛЬКО если во вдыхаемом растворе есть никотин
+        if (isNicotine)
+            _nicotine.RegisterPuff(target);
 
-        // 7. Если раствор закончился — сигарета истлела
+        // Если курили траву/каннабис — даем приятный мудлет расслабления от травки
+        if (isHerb || isRainbow)
+            RaiseLocalEvent(target, new MoodEffectEvent("CannabisSatisfied"));
+
+        // 7. Если раствор закончился — вызываем событие исчерпания раствора
         if (solution.Volume <= FixedPoint2.Zero)
         {
-            _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+            var ev = new SmokableSolutionEmptyEvent();
+            RaiseLocalEvent(entity.Owner, ev, true);
+
+            if (entity.Comp.State == SmokableState.Lit)
+                _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+
             _popup.PopupEntity(Loc.GetString("smoking-puff-burnt-out", ("item", entity.Owner)), target, user);
         }
 
@@ -384,7 +424,6 @@ public sealed partial class SmokingPuffSystem : EntitySystem
     private void OnGetAlternativeVerbs(Entity<SmokableComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
     {
         AddCrushVerb(entity, ref args);
-        AddSmokeRingVerb(entity, ref args);
     }
 
     /// <summary>
@@ -424,30 +463,14 @@ public sealed partial class SmokingPuffSystem : EntitySystem
         if (args.Handled)
             return;
 
-        if (TryBlowSmokeRing(entity, args.Performer))
+        if (TryStartBlowSmokeRing(entity, args.Performer, args.Target))
             args.Handled = true;
     }
 
-    private void AddSmokeRingVerb(Entity<SmokableComponent> entity, ref GetVerbsEvent<AlternativeVerb> args)
-    {
-        if (!args.CanInteract || !args.CanAccess || entity.Comp.State != SmokableState.Lit)
-            return;
-
-        var user = args.User;
-        var verb = new AlternativeVerb
-        {
-            Text = Loc.GetString("smoking-verb-blow-smoke-ring"),
-            Icon = new SpriteSpecifier.Rsi(new ResPath("/Textures/_Sunrise/Effects/smoke_ring.rsi"), "ring"),
-            Act = () => TryBlowSmokeRing(entity, user),
-            Priority = 2
-        };
-        args.Verbs.Add(verb);
-    }
-
     /// <summary>
-    /// Запуск действия выдувания колечка дыма сигаретой.
+    /// Запуск DoAfter затяжки перед выдуванием колечка дыма сигаретой в точку прицела.
     /// </summary>
-    public bool TryBlowSmokeRing(Entity<SmokableComponent> entity, EntityUid user)
+    public bool TryStartBlowSmokeRing(Entity<SmokableComponent> entity, EntityUid user, EntityCoordinates target)
     {
         if (!CanPuff(entity, user, user, out var reason))
         {
@@ -456,22 +479,53 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             return false;
         }
 
+        // 1. Звук глубокой затяжки перед выдуванием колечка
+        if (entity.Comp.PuffSound != null)
+            _audio.PlayPvs(entity.Comp.PuffSound, user, AudioParams.Default.WithVolume(-1.0f).WithMaxDistance(7f).WithVariation(0.04f));
+
+        _popup.PopupEntity(Loc.GetString("smoking-puff-ring-start"), user, user);
+
+        var doAfterArgs = new DoAfterArgs(EntityManager, user, 0.9f, new SmokeRingDoAfterEvent(GetNetCoordinates(target)), entity.Owner, target: user, used: entity.Owner)
+        {
+            BreakOnMove = false,
+            BreakOnDamage = true,
+            NeedHand = false
+        };
+
+        return _doAfter.TryStartDoAfter(doAfterArgs);
+    }
+
+    private void OnSmokeRingDoAfter(Entity<SmokableComponent> entity, ref SmokeRingDoAfterEvent args)
+    {
+        if (args.Cancelled || args.Handled)
+            return;
+
+        var user = args.Args.User;
+
+        if (!CanPuff(entity, user, user, out _))
+            return;
+
         if (!_solution.TryGetSolution(entity.Owner, entity.Comp.Solution, out var soln, out var solution))
-            return false;
+            return;
 
         // Расходуем небольшую порцию раствора на колечко
         var ringAmount = FixedPoint2.Min(FixedPoint2.New(0.15f), solution.Volume);
         if (ringAmount > FixedPoint2.Zero)
         {
             var inhaled = _solution.SplitSolution(soln.Value, ringAmount);
+
+            if (inhaled.ContainsPrototype(ReagentNicotine))
+                _nicotine.RegisterPuff(user);
+
+            if (inhaled.ContainsPrototype(ReagentTHC) || inhaled.ContainsPrototype(ReagentSpaceDrugs))
+                RaiseLocalEvent(user, new MoodEffectEvent("CannabisSatisfied"));
+
             if (TryComp<BloodstreamComponent>(user, out var bloodstream))
             {
                 _reactive.DoEntityReaction(user, inhaled, ReactionMethod.Ingestion);
                 _bloodstream.TryAddToBloodstream((user, bloodstream), inhaled);
             }
         }
-
-        _nicotine.RegisterPuff(user);
 
         // Выпускаем немного сигаретного дыма в атмосферу
         var environment = _atmos.GetContainingMixture(user, true, true);
@@ -486,30 +540,72 @@ public sealed partial class SmokingPuffSystem : EntitySystem
             _audio.PlayPvs(entity.Comp.ExhaleSound, user, AudioParams.Default.WithVolume(-1.5f).WithMaxDistance(7f).WithVariation(0.04f));
 
         _popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
-        LaunchSmokeRing(user);
+
+        var targetCoords = GetCoordinates(args.TargetCoordinates);
+        LaunchSmokeRing(user, targetCoords);
 
         if (solution.Volume <= FixedPoint2.Zero)
         {
-            _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+            var ev = new SmokableSolutionEmptyEvent();
+            RaiseLocalEvent(entity.Owner, ev, true);
+
+            if (entity.Comp.State == SmokableState.Lit)
+                _smoking.SetSmokableState(entity.Owner, SmokableState.Burnt, entity.Comp);
+
             _popup.PopupEntity(Loc.GetString("smoking-puff-burnt-out", ("item", entity.Owner)), user, user);
         }
 
-        return true;
+        args.Handled = true;
     }
 
     /// <summary>
-    /// Создает и запускает летящее колечко дыма или пара вперед по направлению взгляда персонажа.
+    /// Создает и запускает летящее колечко дыма или пара вперед по направлению взгляда персонажа или в точку клика.
     /// </summary>
-    public void LaunchSmokeRing(EntityUid user)
+    public void LaunchSmokeRing(EntityUid user, EntityCoordinates? target = null)
     {
         var userXform = Transform(user);
-        var ring = Spawn("EffectSmokeRing", userXform.Coordinates);
-        var dir = userXform.LocalRotation.ToWorldVec();
-        if (dir.LengthSquared() > 0.001f)
+        Vector2 dir;
+
+        if (target != null && target.Value.IsValid(EntityManager))
         {
-            dir = System.Numerics.Vector2.Normalize(dir);
-            _throwing.TryThrow(ring, dir * 3.5f, baseThrowSpeed: 3.5f, user: user, pushbackRatio: 0f, friction: 0.02f, playSound: false, doSpin: false);
+            var userMapCoords = _transform.GetMapCoordinates(user, userXform);
+            var targetMapCoords = _transform.ToMapCoordinates(target.Value);
+            if (userMapCoords.MapId == targetMapCoords.MapId)
+            {
+                var diff = targetMapCoords.Position - userMapCoords.Position;
+                if (diff.LengthSquared() > 0.001f)
+                    dir = Vector2.Normalize(diff);
+                else
+                    dir = userXform.LocalRotation.ToWorldVec();
+            }
+            else
+            {
+                dir = userXform.LocalRotation.ToWorldVec();
+            }
         }
+        else
+        {
+            dir = userXform.LocalRotation.ToWorldVec();
+        }
+
+        if (dir.LengthSquared() > 0.001f)
+            dir = Vector2.Normalize(dir);
+        else
+            dir = new Vector2(0, 1);
+
+        // Спавним колечко чуть спереди персонажа (изо рта), чтобы не задевать стул под собой
+        var spawnCoords = userXform.Coordinates.Offset(dir * 0.45f);
+        var ring = Spawn("EffectSmokeRing", spawnCoords);
+
+        if (TryComp<SmokeRingComponent>(ring, out var smokeRing))
+        {
+            smokeRing.Shooter = user;
+            smokeRing.GasType = Gas.TobaccoSmoke;
+            if (TryComp<BuckleComponent>(user, out var buckle) && buckle.BuckledTo != null)
+                smokeRing.IgnoredSeat = buckle.BuckledTo;
+        }
+
+        _throwing.TryThrow(ring, dir * 4.5f, baseThrowSpeed: 4.5f, user: user, pushbackRatio: 0f, friction: 0.02f, playSound: false, doSpin: false);
     }
 }
 

@@ -19,8 +19,10 @@
   categories: [ HideSpawnMenu ]
   components:
   - type: Action
-    useDelay: 2.0
+    useDelay: 1.5
     icon: { sprite: _Sunrise/Effects/smoke_ring.rsi, state: ring }
-  - type: InstantAction
+  - type: TargetAction
+    range: 20
+  - type: WorldTargetAction
     event: !type:BlowSmokeRingActionEvent
 

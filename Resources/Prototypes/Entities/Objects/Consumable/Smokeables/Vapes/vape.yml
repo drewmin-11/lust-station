@@ -20,6 +20,7 @@
           vape-mint: { state: vape-mint }
           vape-berry: { state: vape-berry }
           vape-tobacco: { state: vape-tobacco }
+          vape-banana: { state: vape-banana }
   - type: ItemSlots
     slots:
       cartridge:
