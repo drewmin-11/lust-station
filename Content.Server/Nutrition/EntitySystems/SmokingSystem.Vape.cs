@@ -53,6 +53,48 @@ namespace Content.Server.Nutrition.EntitySystems
             SubscribeLocalEvent<VapeComponent, SmokeRingDoAfterEvent>(OnVapeSmokeRingDoAfter);
             SubscribeLocalEvent<VapeComponent, EntInsertedIntoContainerMessage>(OnVapeInserted);
             SubscribeLocalEvent<VapeComponent, EntRemovedFromContainerMessage>(OnVapeRemoved);
+
+            SubscribeLocalEvent<VapeCartridgeComponent, MapInitEvent>(OnCartridgeMapInit);
+            SubscribeLocalEvent<VapeCartridgeComponent, SolutionChangedEvent>(OnCartridgeSolutionChanged);
+        }
+
+        private void OnCartridgeMapInit(Entity<VapeCartridgeComponent> entity, ref MapInitEvent args)
+        {
+            UpdateCartridgeAppearance(entity);
+        }
+
+        private void OnCartridgeSolutionChanged(Entity<VapeCartridgeComponent> entity, ref SolutionChangedEvent args)
+        {
+            UpdateCartridgeAppearance(entity);
+        }
+
+        public void UpdateCartridgeAppearance(Entity<VapeCartridgeComponent> entity)
+        {
+            var flavor = "empty";
+
+            if (_solutionContainerSystem.TryGetSolution(entity.Owner, entity.Comp.Solution, out _, out var solution) &&
+                solution.Volume > FixedPoint2.Zero)
+            {
+                var maxAmount = FixedPoint2.Zero;
+                foreach (var (reagentProto, flavorState) in entity.Comp.FlavorVisuals)
+                {
+                    var amount = solution.GetTotalPrototypeQuantity(reagentProto);
+                    if (amount > maxAmount)
+                    {
+                        maxAmount = amount;
+                        flavor = flavorState;
+                    }
+                }
+            }
+
+            entity.Comp.CurrentFlavor = flavor;
+            _appearance.SetData(entity.Owner, VapeVisuals.CartridgeFlavor, flavor);
+
+            if (_container.TryGetContainingContainer(entity.Owner, out var container) &&
+                TryComp<VapeComponent>(container.Owner, out var vape))
+            {
+                UpdateVapeAppearance((container.Owner, vape));
+            }
         }
 
         private void OnVapeMapInit(Entity<VapeComponent> entity, ref MapInitEvent args)
@@ -402,14 +444,20 @@ namespace Content.Server.Nutrition.EntitySystems
         public void UpdateVapeAppearance(Entity<VapeComponent> entity)
         {
             var hasCartridge = false;
+            var flavor = "no-cartridge";
 
             if (TryComp<ItemSlotsComponent>(entity.Owner, out var itemSlots) &&
                 _itemSlotsSystem.TryGetSlot(entity.Owner, entity.Comp.CartridgeSlot, out var slot, itemSlots))
             {
                 hasCartridge = slot.Item != null;
+                if (slot.Item != null && TryComp<VapeCartridgeComponent>(slot.Item.Value, out var cartridge))
+                {
+                    flavor = cartridge.CurrentFlavor;
+                }
             }
 
             _appearance.SetData(entity.Owner, VapeVisuals.HasCartridge, hasCartridge);
+            _appearance.SetData(entity.Owner, VapeVisuals.CartridgeFlavor, flavor);
         }
 
         private void OnVapeEmagged(Entity<VapeComponent> entity, ref GotEmaggedEvent args)

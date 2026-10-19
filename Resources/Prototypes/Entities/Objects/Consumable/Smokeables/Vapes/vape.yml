@@ -12,10 +12,14 @@
   - type: Appearance
   - type: GenericVisualizer
     visuals:
-      enum.VapeVisuals.HasCartridge:
+      enum.VapeVisuals.CartridgeFlavor:
         enum.VapeVisualLayers.Base:
-          True: { state: icon }
-          False: { state: empty }
+          no-cartridge: { state: empty }
+          empty: { state: icon }
+          mint: { state: vape-mint }
+          berry: { state: vape-berry }
+          tobacco: { state: vape-tobacco }
+          banana: { state: vape-banana }
   - type: ItemSlots
     slots:
       cartridge:

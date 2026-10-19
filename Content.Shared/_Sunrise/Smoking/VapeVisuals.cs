@@ -6,6 +6,7 @@ namespace Content.Shared._Sunrise.Smoking
     public enum VapeVisuals : byte
     {
         HasCartridge,
+        CartridgeFlavor,
     }
 
     [Serializable, NetSerializable]
