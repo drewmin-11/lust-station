@@ -8,29 +8,23 @@
     sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/vape.rsi
     layers:
     - state: icon
-      map: ["base"]
-  # Sunrise edit start - слот картриджа и смена спрайта
+      map: ["enum.VapeVisualLayers.Base"]
   - type: Appearance
   - type: GenericVisualizer
     visuals:
-      enum.SmokingVisuals.CartridgeState:
-        base:
-          empty: { state: empty }
-          icon: { state: icon }
-          vape-mint: { state: vape-mint }
-          vape-berry: { state: vape-berry }
-          vape-tobacco: { state: vape-tobacco }
-          vape-banana: { state: vape-banana }
+      enum.VapeVisuals.HasCartridge:
+        enum.VapeVisualLayers.Base:
+          True: { state: icon }
+          False: { state: empty }
   - type: ItemSlots
     slots:
       cartridge:
-        name: Cartridge
+        name: vape-slot-cartridge
         whitelist:
-          tags:
+          components:
           - VapeCartridge
         insertVerbText: vape-cartridge-insert-verb
         ejectVerbText: vape-cartridge-eject-verb
   - type: ContainerContainer
     containers:
       cartridge: !type:ContainerSlot
-  # Sunrise edit end

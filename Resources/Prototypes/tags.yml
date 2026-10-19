@@ -1496,11 +1496,6 @@
 - type: Tag
   id: VoiceTrigger # ConstructionGraph: Vim
 
-# Sunrise-Start
-- type: Tag
-  id: VapeCartridge # Whitelist for electronic vape pod cartridges
-# Sunrise-End
-
 ## W ##
 
 - type: Tag

@@ -126,16 +126,6 @@ namespace Content.Server.Nutrition.EntitySystems
                     continue;
                 }
 
-                // Sunrise edit start - затухание сигарет в вакууме или при нехватке кислорода
-                var environment = _atmos.GetContainingMixture(uid, true, true);
-                if (environment == null || environment.Pressure < 10f || environment.GetMoles(Gas.Oxygen) < 0.2f)
-                {
-                    SetSmokableState(uid, SmokableState.Unlit, smokable);
-                    _popupSystem.PopupEntity(Loc.GetString("smoking-extinguish-vacuum"), uid);
-                    continue;
-                }
-                // Sunrise edit end
-
                 if (smokable.ExposeTemperature > 0 && smokable.ExposeVolume > 0)
                 {
                     var transform = Transform(uid);

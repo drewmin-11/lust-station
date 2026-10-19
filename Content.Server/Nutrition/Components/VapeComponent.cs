@@ -1,25 +1,48 @@
 using Content.Server.Nutrition.EntitySystems;
 using Content.Shared.Damage;
 using Content.Shared.Atmos;
+using Robust.Shared.Audio;
+using Robust.Shared.Prototypes;
 
-namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
+namespace Content.Server.Nutrition.Components
 {
-    [RegisterComponent, Access(typeof(SmokingSystem))]
+    /// <summary>
+    /// Компонент для электронного испарителя (вейпа).
+    /// Использует движковый ItemSlots для сменного картриджа с раствором.
+    /// </summary>
+    [RegisterComponent, AutoGenerateComponentPause, Access(typeof(SmokingSystem))]
     public sealed partial class VapeComponent : Component
     {
+        /// <summary>
+        /// Время doafter затяжки при использовании на других персонажах.
+        /// </summary>
         [DataField("delay")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float Delay { get; set; } = 5;
+        public float Delay { get; set; } = 3.0f;
 
+        /// <summary>
+        /// Время doafter затяжки при парении на себе.
+        /// </summary>
         [DataField("userDelay")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float UserDelay { get; set; } = 2;
+        public float UserDelay { get; set; } = 1.2f;
+
+        /// <summary>
+        /// Минимальный интервал между затяжками.
+        /// </summary>
+        [DataField("cooldown")]
+        public TimeSpan Cooldown = TimeSpan.FromSeconds(1.5);
+
+        /// <summary>
+        /// Время последней затяжки вейпом. Учитывает паузу сервера/энтити.
+        /// </summary>
+        [DataField, AutoPausedField]
+        public TimeSpan LastPuffTime = TimeSpan.Zero;
 
         [DataField("explosionIntensity")]
         [ViewVariables(VVAccess.ReadWrite)]
         public float ExplosionIntensity { get; set; } = 2.5f;
 
-        // TODO use RiggableComponent.
         [DataField("explodeOnUse")]
         [ViewVariables(VVAccess.ReadWrite)]
         public bool ExplodeOnUse { get; set; } = false;
@@ -33,53 +56,45 @@ namespace Content.Server.Nutrition.Components // Vapes are very nutritious.
         public Gas GasType { get; set; } = Gas.WaterVapor;
 
         /// <summary>
-        /// Solution volume will be divided by this number and converted to the gas
+        /// Название слота ItemSlots для вставки картриджа.
         /// </summary>
-        [DataField("reductionFactor")]
-        [ViewVariables(VVAccess.ReadWrite)]
-        public float ReductionFactor { get; set; } = 300f;
-
-        // TODO when this gets fixed, use prototype serializers
-        [DataField("solutionNeeded")]
-        [ViewVariables(VVAccess.ReadWrite)]
-        public string SolutionNeeded = "Water";
-
-        // Sunrise-Start
         [DataField("cartridgeSlot")]
         [ViewVariables(VVAccess.ReadWrite)]
         public string CartridgeSlot { get; set; } = "cartridge";
 
+        /// <summary>
+        /// Объем жидкости, выпариваемый за одну затяжку.
+        /// </summary>
         [DataField("puffVolume")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float PuffVolume { get; set; } = 1.5f;
+        public float PuffVolume { get; set; } = 1.0f;
 
         /// <summary>
-        /// Количество молей водяного пара за одну затяжку вейпом.
+        /// Моли пара, выделяемые в атмосферу при выдохе.
         /// </summary>
         [DataField("vaporMolesPerPuff")]
         [ViewVariables(VVAccess.ReadWrite)]
-        public float VaporMolesPerPuff { get; set; } = 6.0f;
+        public float VaporMolesPerPuff { get; set; } = 2.0f;
 
         /// <summary>
-        /// Звук затяжки вейпом (шипение спирали и плотный обдув).
+        /// Звук затяжки вейпом (шипение спирали).
         /// </summary>
         [DataField("puffSound")]
-        public Robust.Shared.Audio.SoundSpecifier? PuffSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_puff.ogg");
+        public SoundSpecifier? PuffSound = new SoundPathSpecifier("/Audio/_Sunrise/Effects/vape_puff.ogg");
 
         /// <summary>
-        /// Звук выдоха клубов пара.
+        /// Звук выдоха пара.
         /// </summary>
         [DataField("exhaleSound")]
-        public Robust.Shared.Audio.SoundSpecifier? ExhaleSound = new Robust.Shared.Audio.SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_exhale.ogg");
+        public SoundSpecifier? ExhaleSound = new SoundPathSpecifier("/Audio/_Sunrise/Effects/cigarette_exhale.ogg");
 
         /// <summary>
         /// Прототип действия запуска колечка пара.
         /// </summary>
         [DataField("smokeRingAction")]
-        public Robust.Shared.Prototypes.EntProtoId SmokeRingAction = "ActionBlowSmokeRing";
+        public EntProtoId SmokeRingAction = "ActionBlowSmokeRing";
 
         [DataField("smokeRingActionEntity")]
         public EntityUid? SmokeRingActionEntity;
-        // Sunrise-End
     }
 }

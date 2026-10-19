@@ -227,9 +227,6 @@
         shader: unshaded
   - type: PointLight
     radius: 1.5 #slightly stronger than the other lighters
-  # Sunrise edit start - трюки с зажигалкой
-  - type: LighterTrick
-  # Sunrise edit end
 
 - type: entity
   parent: BaseBrandedLighter
