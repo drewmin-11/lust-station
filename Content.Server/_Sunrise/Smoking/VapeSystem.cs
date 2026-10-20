@@ -12,6 +12,7 @@ using Content.Shared.FixedPoint;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Nutrition;
 using Robust.Shared.Audio;
+using Robust.Shared.Map;
 
 namespace Content.Server._Sunrise.Smoking;
 
@@ -123,43 +124,93 @@ public sealed partial class VapeSystem : SharedVapeSystem
         if (args.Cancelled || args.Handled)
             return;
 
-        var user = args.Args.User;
+        var targetCoords = GetCoordinates(args.TargetCoordinates);
+        if (TryFinalizeSmokeRing(entity, args.Args.User, targetCoords))
+            args.Handled = true;
+    }
 
+    public bool TryFinalizeSmokeRing(
+        Entity<VapeComponent> entity,
+        EntityUid user,
+        EntityCoordinates targetCoords)
+    {
+        if (!CanFinalizeSmokeRing(entity, user, out var cartridgeUid, out var cartridge, out var soln, out var solution))
+            return false;
+
+        DoFinalizeSmokeRing(entity, user, targetCoords, cartridgeUid, cartridge, soln, solution);
+        return true;
+    }
+
+    public bool CanFinalizeSmokeRing(
+        Entity<VapeComponent> entity,
+        EntityUid user,
+        out EntityUid? cartridgeUid,
+        out VapeCartridgeComponent? cartridge,
+        out Entity<SolutionComponent>? soln,
+        out Solution? solution)
+    {
+        cartridge = null;
+        soln = null;
+
+        if (entity.Comp.ExplodeOnUse || _emag.CheckFlag(entity, EmagType.Interaction))
+        {
+            CanVape(entity, user, user, out cartridgeUid, out solution, checkCooldown: false);
+            return true;
+        }
+
+        if (!CanVape(entity, user, user, out cartridgeUid, out solution, checkCooldown: false) ||
+            cartridgeUid == null || solution == null)
+        {
+            return false;
+        }
+
+        if (!TryComp(cartridgeUid.Value, out cartridge) ||
+            !Solution.TryGetSolution(cartridgeUid.Value, cartridge.Solution, out var solutionEnt, out _))
+        {
+            return false;
+        }
+
+        soln = solutionEnt;
+        return true;
+    }
+
+    public void DoFinalizeSmokeRing(
+        Entity<VapeComponent> entity,
+        EntityUid user,
+        EntityCoordinates targetCoords,
+        EntityUid? cartridgeUid,
+        VapeCartridgeComponent? cartridge,
+        Entity<SolutionComponent>? soln,
+        Solution? solution)
+    {
         if (entity.Comp.ExplodeOnUse || _emag.CheckFlag(entity, EmagType.Interaction))
         {
             _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
             Del(entity);
-            args.Handled = true;
             return;
         }
 
-        if (!CanVape(entity, user, user, out var cartridgeUid, out var solution, checkCooldown: false) ||
-            cartridgeUid == null || solution == null ||
-            !TryComp<VapeCartridgeComponent>(cartridgeUid.Value, out var cartridge) ||
-            !Solution.TryGetSolution(cartridgeUid.Value, cartridge.Solution, out var soln, out _))
+        if (solution != null && soln != null)
         {
-            return;
-        }
-
-        // Проверка на взрывоопасные реагенты (плазма, тритий)
-        foreach (var reagent in solution.Contents)
-        {
-            if (entity.Comp.ExplosiveReagents.Contains(reagent.Reagent.Prototype))
+            // Проверка на взрывоопасные реагенты (плазма, тритий)
+            foreach (var reagent in solution.Contents)
             {
-                _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity * 1.5f, 1f, 4, canCreateVacuum: false);
-                Del(entity);
-                args.Handled = true;
-                return;
+                if (entity.Comp.ExplosiveReagents.Contains(reagent.Reagent.Prototype))
+                {
+                    _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity * 1.5f, 1f, 4, canCreateVacuum: false);
+                    Del(entity);
+                    return;
+                }
             }
-        }
 
-        var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
-        var split = Solution.SplitSolution(soln.Value, puffVol);
+            var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
+            var split = Solution.SplitSolution(soln.Value, puffVol);
 
-        if (split.Volume > FixedPoint2.Zero)
-        {
-            _reactive.DoEntityReaction(user, split, ReactionMethod.Ingestion);
-            _bloodstream.TryAddToBloodstream(user, split);
+            if (split.Volume > FixedPoint2.Zero)
+            {
+                _reactive.DoEntityReaction(user, split, ReactionMethod.Ingestion);
+                _bloodstream.TryAddToBloodstream(user, split);
+            }
         }
 
         if (entity.Comp.ExhaleSound != null)
@@ -168,11 +219,7 @@ public sealed partial class VapeSystem : SharedVapeSystem
         }
 
         Popup.PopupEntity(Loc.GetString("smoking-puff-smoke-ring", ("user", Identity.Entity(user, EntityManager))), user);
-
-        var targetCoords = GetCoordinates(args.TargetCoordinates);
         _smokeRing.SpawnSmokeRing(user, targetCoords, entity.Comp.GasType);
-
-        args.Handled = true;
     }
 
     private void OnVapeEmagged(Entity<VapeComponent> entity, ref GotEmaggedEvent args)

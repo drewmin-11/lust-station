@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Body.Systems;
 using Content.Server.Nutrition.EntitySystems;
@@ -39,23 +40,63 @@ public sealed partial class SmokingPuffSystem : SharedSmokingPuffSystem
         if (args.Cancelled || args.Handled || args.Args.Target == null)
             return;
 
-        var target = args.Args.Target.Value;
-        var user = args.Args.User;
+        if (TryFinalizePuff(entity, args.Args.User, args.Args.Target.Value, args.Forced))
+            args.Handled = true;
+    }
+
+    public bool TryFinalizePuff(
+        Entity<SmokablePuffComponent> entity,
+        EntityUid user,
+        EntityUid target,
+        bool forced = false)
+    {
+        if (!CanFinalizePuff(entity, user, target, out var smokable, out var soln, out var solution))
+            return false;
+
+        DoFinalizePuff(entity, user, target, smokable, soln.Value, solution, forced);
+        return true;
+    }
+
+    public bool CanFinalizePuff(
+        Entity<SmokablePuffComponent> entity,
+        EntityUid user,
+        EntityUid target,
+        [NotNullWhen(true)] out SmokableComponent? smokable,
+        [NotNullWhen(true)] out Entity<SolutionComponent>? soln,
+        [NotNullWhen(true)] out Solution? solution)
+    {
+        smokable = null;
+        soln = null;
+        solution = null;
 
         if (!Ingestion.HasMouthAvailable(user, target))
-            return;
+            return false;
 
-        if (!TryComp<SmokableComponent>(entity.Owner, out var smokable))
-            return;
+        if (!TryComp(entity.Owner, out smokable) || smokable.State != SmokableState.Lit)
+            return false;
 
-        if (!Solution.TryGetSolution(entity.Owner, smokable.Solution, out var soln, out var solution) ||
-            solution.Volume <= FixedPoint2.Zero)
+        if (!Solution.TryGetSolution(entity.Owner, smokable.Solution, out var solutionEnt, out var sol) ||
+            sol.Volume <= FixedPoint2.Zero)
         {
-            return;
+            return false;
         }
 
+        soln = solutionEnt;
+        solution = sol;
+        return true;
+    }
+
+    public void DoFinalizePuff(
+        Entity<SmokablePuffComponent> entity,
+        EntityUid user,
+        EntityUid target,
+        SmokableComponent smokable,
+        Entity<SolutionComponent> soln,
+        Solution solution,
+        bool forced)
+    {
         var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
-        var split = Solution.SplitSolution(soln.Value, puffVol);
+        var split = Solution.SplitSolution(soln, puffVol);
 
         if (split.Volume > FixedPoint2.Zero)
         {
@@ -82,7 +123,7 @@ public sealed partial class SmokingPuffSystem : SharedSmokingPuffSystem
             Audio.PlayPvs(entity.Comp.ExhaleSound, target, AudioParams.Default.WithVolume(-1.5f).WithMaxDistance(7f).WithVariation(0.04f));
         }
 
-        if (args.Forced)
+        if (forced)
         {
             var targetName = Identity.Entity(target, EntityManager);
             var userName = Identity.Entity(user, EntityManager);
@@ -93,8 +134,6 @@ public sealed partial class SmokingPuffSystem : SharedSmokingPuffSystem
         {
             Popup.PopupEntity(Loc.GetString("smoking-puff-success"), target, target);
         }
-
-        args.Handled = true;
     }
 
     private void OnSmokeRingDoAfter(Entity<SmokablePuffComponent> entity, ref SmokeRingDoAfterEvent args)
@@ -105,6 +144,7 @@ public sealed partial class SmokingPuffSystem : SharedSmokingPuffSystem
         var user = args.Args.User;
 
         if (TryComp<SmokableComponent>(entity.Owner, out var smokable) &&
+            smokable.State == SmokableState.Lit &&
             Solution.TryGetSolution(entity.Owner, smokable.Solution, out var soln, out var solution) &&
             solution.Volume > FixedPoint2.Zero)
         {
