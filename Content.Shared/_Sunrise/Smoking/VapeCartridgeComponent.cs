@@ -28,10 +28,8 @@ public sealed partial class VapeCartridgeComponent : Component
     public Dictionary<ProtoId<ReagentPrototype>, string> FlavorVisuals = new()
     {
         { "JuiceLime", "mint" },
-        { "JuiceMint", "mint" },
         { "JuiceBerry", "berry" },
         { "Coffee", "tobacco" },
-        { "JuiceTobacco", "tobacco" },
         { "JuiceBanana", "banana" },
     };
 }
