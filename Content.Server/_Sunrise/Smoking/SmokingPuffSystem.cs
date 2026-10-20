@@ -42,6 +42,9 @@ public sealed partial class SmokingPuffSystem : SharedSmokingPuffSystem
         var target = args.Args.Target.Value;
         var user = args.Args.User;
 
+        if (!Ingestion.HasMouthAvailable(user, target))
+            return;
+
         if (!TryComp<SmokableComponent>(entity.Owner, out var smokable))
             return;
 

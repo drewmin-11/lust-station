@@ -125,12 +125,32 @@ public sealed partial class VapeSystem : SharedVapeSystem
 
         var user = args.Args.User;
 
+        if (entity.Comp.ExplodeOnUse || _emag.CheckFlag(entity, EmagType.Interaction))
+        {
+            _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity, 0.5f, 3, canCreateVacuum: false);
+            Del(entity);
+            args.Handled = true;
+            return;
+        }
+
         if (!CanVape(entity, user, user, out var cartridgeUid, out var solution, checkCooldown: false) ||
             cartridgeUid == null || solution == null ||
             !TryComp<VapeCartridgeComponent>(cartridgeUid.Value, out var cartridge) ||
             !Solution.TryGetSolution(cartridgeUid.Value, cartridge.Solution, out var soln, out _))
         {
             return;
+        }
+
+        // Проверка на взрывоопасные реагенты (плазма, тритий)
+        foreach (var reagent in solution.Contents)
+        {
+            if (entity.Comp.ExplosiveReagents.Contains(reagent.Reagent.Prototype))
+            {
+                _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity * 1.5f, 1f, 4, canCreateVacuum: false);
+                Del(entity);
+                args.Handled = true;
+                return;
+            }
         }
 
         var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
