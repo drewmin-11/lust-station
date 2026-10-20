@@ -9,7 +9,7 @@
     CigarCase: 1
     Ashtray: 4 # Sunrise-Edit
     SmokingPipeFilledTobacco: 1
-    Vape: 2
+    Vape: 2 # Sunrise-Edit
     # Sunrise edit start - картриджи и жидкости для вейпа в ShadyCigs
     VapeCartridge: 8
     VapeJuiceMint: 3

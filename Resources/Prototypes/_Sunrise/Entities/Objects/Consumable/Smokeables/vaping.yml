@@ -144,7 +144,7 @@
   parent: BaseVapeJuice
   id: VapeJuiceMint
   name: mint e-liquid bottle
-  description: A 30ml bottle of cool mint and lime e-liquid with nicotine for refilling vape pods.
+  description: A 30ml bottle of cool mint e-liquid with nicotine for refilling vape pods.
   components:
   - type: Sprite
     state: bottle-mint
@@ -184,7 +184,7 @@
   parent: BaseVapeJuice
   id: VapeJuiceTobacco
   name: tobacco e-liquid bottle
-  description: A 30ml bottle of classic aromatic tobacco e-liquid with high nicotine content for refilling vape pods.
+  description: A 30ml bottle of classic aromatic tobacco e-liquid with nicotine for refilling vape pods.
   components:
   - type: Sprite
     state: bottle-tobacco
@@ -203,8 +203,8 @@
 - type: entity
   parent: BaseVapeJuice
   id: VapeJuiceBanana
-  name: banana bubblegum e-liquid bottle
-  description: A 30ml bottle of sweet banana and bubblegum e-liquid with nicotine for refilling vape pods.
+  name: banana e-liquid bottle
+  description: A 30ml bottle of sweet banana bubblegum e-liquid with nicotine for refilling vape pods.
   components:
   - type: Sprite
     state: bottle-banana

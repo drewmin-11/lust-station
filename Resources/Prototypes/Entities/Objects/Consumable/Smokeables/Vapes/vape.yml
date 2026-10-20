@@ -1,8 +1,9 @@
 - type: entity
   id: Vape
   parent: BaseVape
+  # Sunrise edit start - модульный вейп с картриджами
   name: electronic pod-mod vape
-  description: A sleek electronic pod-mod vaporizer. Requires an inserted pod cartridge to use.
+  description: A sleek electronic pod-mod vaporizer. Requires an inserted pod cartridge with e-liquid to use.
   components:
   - type: Sprite
     sprite: _Sunrise/Objects/Consumable/Smokeables/Vapes/vape.rsi
@@ -32,3 +33,4 @@
   - type: ContainerContainer
     containers:
       cartridge: !type:ContainerSlot
+  # Sunrise edit end

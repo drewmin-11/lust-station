@@ -79,7 +79,9 @@
     damage:
       types:
         Heat: 2
-  - type: RefillableSolution
-    solution: smokable
-  - type: ExaminableSolution
-    solution: smokable
+  # Sunrise edit start - жидкость заправляется только в сменный картридж, а не в корпус
+  # - type: RefillableSolution
+  #   solution: smokable
+  # - type: ExaminableSolution
+  #   solution: smokable
+  # Sunrise edit end

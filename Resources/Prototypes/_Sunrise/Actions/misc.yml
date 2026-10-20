@@ -14,8 +14,8 @@
 - type: entity
   parent: BaseAction
   id: ActionBlowSmokeRing
-  name: action-blow-smoke-ring
-  description: action-blow-smoke-ring-desc
+  name: blow smoke ring
+  description: Exhale a stylish smoke or vapor ring in the target direction.
   categories: [ HideSpawnMenu ]
   components:
   - type: Action
@@ -25,4 +25,3 @@
     range: 20
   - type: WorldTargetAction
     event: !type:BlowSmokeRingActionEvent
-

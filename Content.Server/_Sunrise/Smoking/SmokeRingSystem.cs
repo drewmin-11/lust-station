@@ -1,8 +1,9 @@
+using System.Numerics;
 using Content.Server.Atmos.EntitySystems;
 using Content.Shared.Atmos;
 using Content.Shared.Buckle.Components;
-using Content.Shared.Smoking;
 using Content.Shared.Throwing;
+using Robust.Shared.Map;
 using Robust.Shared.Physics.Events;
 using Robust.Shared.Timing;
 
@@ -14,8 +15,9 @@ namespace Content.Server._Sunrise.Smoking;
 public sealed partial class SmokeRingSystem : EntitySystem
 {
     [Dependency] private IGameTiming _timing = default!;
-    [Dependency] private SharedAppearanceSystem _appearance = default!;
     [Dependency] private AtmosphereSystem _atmos = default!;
+    [Dependency] private ThrowingSystem _throwing = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
 
     public override void Initialize()
     {
@@ -37,11 +39,9 @@ public sealed partial class SmokeRingSystem : EntitySystem
         if (entity.Comp.Dissipated)
             return;
 
-        // Если врезается в самого стрелка
         if (args.OtherEntity == entity.Comp.Shooter)
             return;
 
-        // Если врезается в стул / кровать / мебель, на которой сидит стрелок
         if (args.OtherEntity == entity.Comp.IgnoredSeat)
             return;
 
@@ -64,7 +64,6 @@ public sealed partial class SmokeRingSystem : EntitySystem
             }
         }
 
-        // Если врезается в твердое препятствие (стены, объекты, сущности)
         if (!args.OtherFixture.Hard)
             return;
 
@@ -93,6 +92,57 @@ public sealed partial class SmokeRingSystem : EntitySystem
     {
         if (!entity.Comp.Dissipated)
             DissipateRing(entity);
+    }
+
+    /// <summary>
+    /// Создает и запускает колечко дыма или пара в целевом направлении.
+    /// </summary>
+    public EntityUid? SpawnSmokeRing(EntityUid user, EntityCoordinates? target = null, Gas gasType = Gas.WaterVapor)
+    {
+        var userXform = Transform(user);
+        Vector2 dir;
+
+        if (target != null && target.Value.IsValid(EntityManager))
+        {
+            var userMapCoords = _transform.GetMapCoordinates(user, userXform);
+            var targetMapCoords = _transform.ToMapCoordinates(target.Value);
+            if (userMapCoords.MapId == targetMapCoords.MapId)
+            {
+                var diff = targetMapCoords.Position - userMapCoords.Position;
+                if (diff.LengthSquared() > 0.001f)
+                    dir = Vector2.Normalize(diff);
+                else
+                    dir = _transform.GetWorldRotation(userXform).ToWorldVec();
+            }
+            else
+            {
+                dir = _transform.GetWorldRotation(userXform).ToWorldVec();
+            }
+        }
+        else
+        {
+            dir = _transform.GetWorldRotation(userXform).ToWorldVec();
+        }
+
+        if (dir.LengthSquared() > 0.001f)
+            dir = Vector2.Normalize(dir);
+        else
+            dir = new Vector2(0, 1);
+
+        var userMap = _transform.GetMapCoordinates(user, userXform);
+        var spawnMapCoords = userMap.Offset(dir * 0.45f);
+        var ring = Spawn("EffectSmokeRing", spawnMapCoords);
+
+        if (TryComp<SmokeRingComponent>(ring, out var smokeRing))
+        {
+            smokeRing.Shooter = user;
+            smokeRing.GasType = gasType;
+            if (TryComp<BuckleComponent>(user, out var buckle) && buckle.BuckledTo != null)
+                smokeRing.IgnoredSeat = buckle.BuckledTo;
+        }
+
+        _throwing.TryThrow(ring, dir * 4.5f, baseThrowSpeed: 4.5f, user: user, pushbackRatio: 0f, friction: 0.02f, playSound: false, doSpin: false);
+        return ring;
     }
 
     /// <summary>
