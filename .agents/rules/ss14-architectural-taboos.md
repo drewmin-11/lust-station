@@ -12,18 +12,21 @@ This rule defines strict architectural prohibitions and core development princip
 
 Entity systems (`EntitySystem`) in Robust Toolbox / SS14 MUST BE STATELESS.
 
-* ❌ **PROHIBITED**: Storing entity states, timers, cooldowns, or collections of entities in system fields:
+* ❌ **PROHIBITED**: Storing mutable entity states, timers, cooldowns, or lifecycle collections of entities in system fields. System dependencies (`[Dependency]`) and safe `EntityQuery<T>` caches stored in system fields and populated via dependency injection or `Initialize()` are permitted:
+
   ```csharp
   // TERRIBLE: Memory leak when entities are deleted or moved!
   private readonly Dictionary<EntityUid, TimeSpan> _lastPuffTime = new();
   private readonly HashSet<EntityUid> _activeEntities = new();
   ```
-* ✅ **MANDATORY**: All state must reside strictly within components (`Component`):
+
+* ✅ **MANDATORY**: All entity state must reside strictly within components (`Component`):
+
   ```csharp
   [RegisterComponent, AutoGenerateComponentPause]
   public sealed partial class SmokableComponent : Component
   {
-      [DataField, AutoPausedField]
+      [AutoPausedField]
       public TimeSpan LastPuffTime;
   }
   ```
@@ -46,6 +49,7 @@ Entity systems (`EntitySystem`) in Robust Toolbox / SS14 MUST BE STATELESS.
 SS14 is a data-driven engine. C# code must not hardcode specific prototype IDs or sprite states.
 
 * ❌ **PROHIBITED**: Hardcoding reagent IDs, prototype names, or sprite state strings in C# logic:
+
   ```csharp
   // TERRIBLE: Any new juice or sprite requires modifying C# and recompilation!
   if (solution.GetTotalPrototypeQuantity("JuiceLime") > 0)
@@ -53,6 +57,7 @@ SS14 is a data-driven engine. C# code must not hardcode specific prototype IDs o
   else if (solution.GetTotalPrototypeQuantity("JuiceBerry") > 0)
       state = "vape-berry";
   ```
+
 * ✅ **MANDATORY**:
   - Use `GenericVisualizer` in YAML for sprite state switching based on appearance data.
   - Or derive visual appearance from data (e.g., `solution.GetColor()` for tinting).
@@ -66,6 +71,7 @@ SS14 is a data-driven engine. C# code must not hardcode specific prototype IDs o
 Reviewer rule: *"What is the point of most systems if they do what already exists in prototypes?"*
 
 Before writing a new `EntitySystem` and `Component`:
+
 * ❌ **PROHIBITED**: Writing custom systems for container slots, eating/drinking, exams, or reagent dispensing when engine systems already exist.
 * ✅ **MANDATORY**:
   - For insertable cartridges / magazines: use `ItemSlotsComponent` and `ContainerSystem`.
@@ -110,17 +116,21 @@ Do not write 700-line monolithic systems.
 ## 8. Taboo: Legacy `[DataField("name")]` and DataFields on Runtime State
 
 * ❌ **PROHIBITED**: Using explicit string names in `[DataField("name")]` in modern Robust Toolbox code:
+
   ```csharp
   // BAD: Legacy positional string in DataField causes static analyzer errors (ss14-datafield-must-not-use-legacy-name-string)
   [DataField("cooldown")]
   public TimeSpan Cooldown;
   ```
+
 * ❌ **PROHIBITED**: Putting `[DataField]` on runtime-generated fields, cooldown timestamps, or transient entities:
+
   ```csharp
   // BAD: Serializing runtime state into YAML prototypes causes unexpected data corruption and breaks map saving!
   [DataField, AutoPausedField]
   public TimeSpan LastPuffTime;
   ```
+
 * ✅ **MANDATORY**:
   - Use bare `[DataField]` without string parameters; YAML property names are automatically derived in camelCase from the C# member name.
   - Runtime state (like `LastPuffTime`, `Shooter`, `SpawnTime`, `Dissipated`, `CurrentFlavor`, `ActionEntity`) must NOT have `[DataField]`. For pausing, use only `[AutoPausedField]`.
@@ -130,6 +140,7 @@ Do not write 700-line monolithic systems.
 ## 9. Taboo: Event Subscriptions Outside `Initialize()`
 
 * ❌ **PROHIBITED**: Calling `SubscribeLocalEvent` inside arbitrary helper methods or secondary initializers (`InitializeVapes()`, `InitPuff()`, etc.):
+
   ```csharp
   // BAD: ast-grep and engine rule violation (ss14-subscribelocalevent-only-in-initialize)!
   private void InitializeVapes()
@@ -137,6 +148,7 @@ Do not write 700-line monolithic systems.
       SubscribeLocalEvent<VapeComponent, UseInHandEvent>(OnVapeUseInHand);
   }
   ```
+
 * ✅ **MANDATORY**: All subscriptions must reside strictly inside `public override void Initialize()`.
 
 ---
@@ -157,4 +169,3 @@ Do not write 700-line monolithic systems.
 * ✅ **MANDATORY**:
   - User interactions and initial validation (`CanDo`), predicted audio (`_audio.PlayPredicted`), predicted popups (`_popup.PopupPredicted`), and `_doAfter.TryStartDoAfter(...)` belong in **`Content.Shared`** systems.
   - The server system inherits the shared system and only subscribes to the completed DoAfter event to execute irreversible state changes (chemical transfer, atmosphere emission, entity spawning).
-

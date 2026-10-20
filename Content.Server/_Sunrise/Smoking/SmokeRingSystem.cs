@@ -5,6 +5,7 @@ using Content.Shared.Buckle.Components;
 using Content.Shared.Throwing;
 using Robust.Shared.Map;
 using Robust.Shared.Physics.Events;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
 namespace Content.Server._Sunrise.Smoking;
@@ -14,6 +15,9 @@ namespace Content.Server._Sunrise.Smoking;
 /// </summary>
 public sealed partial class SmokeRingSystem : EntitySystem
 {
+    [ValidatePrototypeId<EntityPrototype>]
+    public static readonly EntProtoId SmokeRingPrototype = "EffectSmokeRing";
+
     [Dependency] private IGameTiming _timing = default!;
     [Dependency] private AtmosphereSystem _atmos = default!;
     [Dependency] private ThrowingSystem _throwing = default!;
@@ -131,7 +135,7 @@ public sealed partial class SmokeRingSystem : EntitySystem
 
         var userMap = _transform.GetMapCoordinates(user, userXform);
         var spawnMapCoords = userMap.Offset(dir * 0.45f);
-        var ring = Spawn("EffectSmokeRing", spawnMapCoords);
+        var ring = Spawn(SmokeRingPrototype, spawnMapCoords);
 
         if (TryComp<SmokeRingComponent>(ring, out var smokeRing))
         {

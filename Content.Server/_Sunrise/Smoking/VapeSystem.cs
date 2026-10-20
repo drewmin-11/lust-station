@@ -53,7 +53,7 @@ public sealed partial class VapeSystem : SharedVapeSystem
             return;
         }
 
-        if (!CanVape(entity, user, target, out var cartridgeUid, out var solution))
+        if (!CanVape(entity, user, target, out var cartridgeUid, out var solution, checkCooldown: false))
             return;
 
         if (cartridgeUid == null || solution == null)
@@ -66,7 +66,7 @@ public sealed partial class VapeSystem : SharedVapeSystem
         // Проверка на взрывоопасные реагенты (плазма, тритий)
         foreach (var reagent in solution.Contents)
         {
-            if (reagent.Reagent.Prototype == "Plasma" || reagent.Reagent.Prototype == "Tritium")
+            if (entity.Comp.ExplosiveReagents.Contains(reagent.Reagent.Prototype))
             {
                 _explosion.QueueExplosion(entity.Owner, "Default", entity.Comp.ExplosionIntensity * 1.5f, 1f, 4, canCreateVacuum: false);
                 Del(entity);
@@ -125,19 +125,21 @@ public sealed partial class VapeSystem : SharedVapeSystem
 
         var user = args.Args.User;
 
-        if (CanVape(entity, user, user, out var cartridgeUid, out var solution) &&
-            cartridgeUid != null && solution != null &&
-            TryComp<VapeCartridgeComponent>(cartridgeUid.Value, out var cartridge) &&
-            Solution.TryGetSolution(cartridgeUid.Value, cartridge.Solution, out var soln, out _))
+        if (!CanVape(entity, user, user, out var cartridgeUid, out var solution, checkCooldown: false) ||
+            cartridgeUid == null || solution == null ||
+            !TryComp<VapeCartridgeComponent>(cartridgeUid.Value, out var cartridge) ||
+            !Solution.TryGetSolution(cartridgeUid.Value, cartridge.Solution, out var soln, out _))
         {
-            var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
-            var split = Solution.SplitSolution(soln.Value, puffVol);
+            return;
+        }
 
-            if (split.Volume > FixedPoint2.Zero)
-            {
-                _reactive.DoEntityReaction(user, split, ReactionMethod.Ingestion);
-                _bloodstream.TryAddToBloodstream(user, split);
-            }
+        var puffVol = FixedPoint2.Min(FixedPoint2.New(entity.Comp.PuffVolume), solution.Volume);
+        var split = Solution.SplitSolution(soln.Value, puffVol);
+
+        if (split.Volume > FixedPoint2.Zero)
+        {
+            _reactive.DoEntityReaction(user, split, ReactionMethod.Ingestion);
+            _bloodstream.TryAddToBloodstream(user, split);
         }
 
         if (entity.Comp.ExhaleSound != null)

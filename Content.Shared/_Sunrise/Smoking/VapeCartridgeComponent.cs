@@ -14,7 +14,7 @@ public sealed partial class VapeCartridgeComponent : Component
     /// Имя контейнера растворов картриджа.
     /// </summary>
     [DataField]
-    public string Solution = "cartridge";
+    public string Solution = "smokable";
 
     /// <summary>
     /// Текущий преобладающий вкус жидкости для визуализатора.
@@ -27,8 +27,10 @@ public sealed partial class VapeCartridgeComponent : Component
     [DataField]
     public Dictionary<ProtoId<ReagentPrototype>, string> FlavorVisuals = new()
     {
+        { "JuiceLime", "mint" },
         { "JuiceMint", "mint" },
         { "JuiceBerry", "berry" },
+        { "Coffee", "tobacco" },
         { "JuiceTobacco", "tobacco" },
         { "JuiceBanana", "banana" },
     };

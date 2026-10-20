@@ -1,4 +1,5 @@
 using Content.Shared.Atmos;
+using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Damage;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
@@ -10,7 +11,7 @@ namespace Content.Shared._Sunrise.Smoking;
 /// Компонент для электронного испарителя (вейпа).
 /// Использует сменные картриджи с жидкостью через ItemSlots.
 /// </summary>
-[RegisterComponent, NetworkedComponent, AutoGenerateComponentPause]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentState, AutoGenerateComponentPause]
 public sealed partial class VapeComponent : Component
 {
     /// <summary>
@@ -34,7 +35,7 @@ public sealed partial class VapeComponent : Component
     /// <summary>
     /// Время последней затяжки вейпом. Учитывает паузу сервера/энтити.
     /// </summary>
-    [AutoPausedField]
+    [AutoNetworkedField, AutoPausedField]
     public TimeSpan LastPuffTime = TimeSpan.Zero;
 
     /// <summary>
@@ -60,6 +61,16 @@ public sealed partial class VapeComponent : Component
     /// </summary>
     [DataField]
     public Gas GasType = Gas.WaterVapor;
+
+    /// <summary>
+    /// Список взрывоопасных реагентов при нагревании спирали.
+    /// </summary>
+    [DataField]
+    public HashSet<ProtoId<ReagentPrototype>> ExplosiveReagents = new()
+    {
+        "Plasma",
+        "Tritium"
+    };
 
     /// <summary>
     /// Название слота ItemSlots для вставки картриджа.

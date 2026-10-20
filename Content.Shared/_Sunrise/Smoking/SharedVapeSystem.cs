@@ -84,6 +84,7 @@ public abstract partial class SharedVapeSystem : EntitySystem
         }
 
         entity.Comp.CurrentFlavor = flavor;
+        Appearance.SetData(entity.Owner, VapeVisuals.CartridgeFlavor, flavor);
 
         if (Container.TryGetContainingContainer((entity.Owner, null, null), out var container) &&
             TryComp<VapeComponent>(container.Owner, out var vape))
@@ -151,6 +152,7 @@ public abstract partial class SharedVapeSystem : EntitySystem
         EntityUid target,
         out EntityUid? cartridgeUid,
         out Solution? solution,
+        bool checkCooldown = true,
         bool quiet = false)
     {
         cartridgeUid = null;
@@ -186,7 +188,7 @@ public abstract partial class SharedVapeSystem : EntitySystem
             return false;
         }
 
-        if (Timing.CurTime < entity.Comp.LastPuffTime + entity.Comp.Cooldown)
+        if (checkCooldown && Timing.CurTime < entity.Comp.LastPuffTime + entity.Comp.Cooldown)
             return false;
 
         return true;

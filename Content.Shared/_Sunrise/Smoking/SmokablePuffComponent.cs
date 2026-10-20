@@ -7,13 +7,13 @@ namespace Content.Shared._Sunrise.Smoking;
 /// <summary>
 /// Компонент для активной затяжки тлеющими сигаретами, сигарами и трубками.
 /// </summary>
-[RegisterComponent, NetworkedComponent, AutoGenerateComponentPause]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentState, AutoGenerateComponentPause]
 public sealed partial class SmokablePuffComponent : Component
 {
     /// <summary>
     /// Время последней затяжки.
     /// </summary>
-    [AutoPausedField]
+    [AutoNetworkedField, AutoPausedField]
     public TimeSpan LastPuffTime = TimeSpan.Zero;
 
     /// <summary>
