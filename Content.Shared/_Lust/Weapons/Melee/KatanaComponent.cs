@@ -93,13 +93,13 @@ public sealed partial class KatanaComponent : Component
     /// Звук парирования / отбивания удара или пули.
     /// </summary>
     [DataField]
-    public SoundSpecifier ParrySound = new SoundPathSpecifier("/Audio/Effects/clang.ogg");
+    public SoundSpecifier ParrySound = new SoundPathSpecifier("/Audio/_Lust/Weapons/Katana/katana_parry.ogg");
 
     /// <summary>
     /// Звук отсечения плоти / расчленения.
     /// </summary>
     [DataField]
-    public SoundSpecifier DismemberSound = new SoundPathSpecifier("/Audio/Items/Anomaly/flesh_crit.ogg");
+    public SoundSpecifier DismemberSound = new SoundPathSpecifier("/Audio/_Lust/Weapons/Katana/katana_flesh_sever.ogg");
 
     /// <summary>
     /// Звук извлечения клинка из ножен.
@@ -117,7 +117,13 @@ public sealed partial class KatanaComponent : Component
     /// Звук кругового рассечения.
     /// </summary>
     [DataField]
-    public SoundSpecifier CleaveSound = new SoundPathSpecifier("/Audio/Weapons/bladeslice.ogg");
+    public SoundSpecifier CleaveSound = new SoundPathSpecifier("/Audio/_Lust/Weapons/Katana/katana_swing.ogg");
+
+    /// <summary>
+    /// Прототип эффекта анимации рассечения.
+    /// </summary>
+    [DataField]
+    public EntProtoId SlashEffect = "WeaponArcSlash";
 
     /// <summary>
     /// Прототип действия рывка Иайдо.

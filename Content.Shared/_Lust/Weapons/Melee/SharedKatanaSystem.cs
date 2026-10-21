@@ -170,6 +170,15 @@ public abstract partial class SharedKatanaSystem : EntitySystem
             damageMultiplier *= comp.ComboBonusMultiplier;
             _popup.PopupPredicted(Loc.GetString("katana-combo-finisher"), args.User, args.User);
             _audio.PlayPredicted(comp.CleaveSound, katanaUid, args.User);
+
+            if (_net.IsServer)
+            {
+                foreach (var hit in args.HitEntities)
+                {
+                    var hitCoords = Transform(hit).Coordinates;
+                    Spawn(comp.SlashEffect, hitCoords);
+                }
+            }
         }
         else if (isDrawStrike)
         {
@@ -275,9 +284,12 @@ public abstract partial class SharedKatanaSystem : EntitySystem
         _audio.PlayPredicted(ent.Comp.CleaveSound, user, user);
         _popup.PopupPredicted(Loc.GetString("katana-dash-success"), user, user);
 
-        // На сервере наносим урон врагам в точке прибытия
+        // На сервере наносим урон врагам в точке прибытия и спавним эффекты рассечения
         if (_net.IsServer)
         {
+            Spawn(ent.Comp.SlashEffect, startCoords);
+            Spawn(ent.Comp.SlashEffect, target);
+
             var hitRadius = 1.6f;
             foreach (var nearby in _lookup.GetEntitiesInRange(target, hitRadius))
             {
@@ -343,6 +355,15 @@ public abstract partial class SharedKatanaSystem : EntitySystem
             return;
 
         var userCoords = Transform(user).Coordinates;
+
+        // Спавним круговой вихрь из 4 взмахов клинка вокруг персонажа
+        var angles = new[] { Angle.Zero, Angle.FromDegrees(90), Angle.FromDegrees(180), Angle.FromDegrees(270) };
+        foreach (var rot in angles)
+        {
+            var slash = Spawn(ent.Comp.SlashEffect, userCoords);
+            _transform.SetWorldRotation(slash, rot);
+        }
+
         var enemies = _lookup.GetEntitiesInRange(userCoords, ent.Comp.CleaveRadius);
 
         foreach (var enemy in enemies)
@@ -429,7 +450,14 @@ public abstract partial class SharedKatanaSystem : EntitySystem
         args.Damage *= 0;
 
         if (_katanaQuery.TryComp(ent.Comp.Katana, out var katana))
+        {
             _audio.PlayPredicted(katana.ParrySound, ent.Owner, args.Origin);
+            if (_net.IsServer)
+            {
+                var userCoords = Transform(ent.Owner).Coordinates;
+                Spawn(katana.SlashEffect, userCoords);
+            }
+        }
 
         _popup.PopupPredicted(Loc.GetString("katana-parry-success"), ent.Owner, ent.Owner);
     }
