@@ -1,0 +1,41 @@
+- type: entity
+  id: ActionKatanaDash
+  name: katana-action-dash-name
+  description: katana-action-dash-desc
+  components:
+  - type: Action
+    icon:
+      sprite: Interface/Actions/actions_borg.rsi
+      state: xenoborg-jump-module
+    useDelay: 6.0
+  - type: TargetAction
+    checkCanAccess: false
+    range: 5.0
+  - type: WorldTargetAction
+    event: !type:KatanaDashActionEvent
+
+- type: entity
+  id: ActionKatanaCleave
+  name: katana-action-cleave-name
+  description: katana-action-cleave-desc
+  components:
+  - type: Action
+    icon:
+      sprite: Interface/Actions/actions_borg.rsi
+      state: xenoborg-sword-module
+    useDelay: 8.0
+  - type: InstantAction
+    event: !type:KatanaCleaveActionEvent
+
+- type: entity
+  id: ActionKatanaParry
+  name: katana-action-parry-name
+  description: katana-action-parry-desc
+  components:
+  - type: Action
+    icon:
+      sprite: Interface/Actions/actions_mecha.rsi
+      state: mech_defense_mode_on
+    useDelay: 8.0
+  - type: InstantAction
+    event: !type:KatanaParryActionEvent
