@@ -5,8 +5,13 @@ using Content.Server.Fluids.EntitySystems;
 using Content.Server.Stunnable;
 using Content.Shared._Lust.Weapons.Melee;
 using Content.Shared.Body;
+using Content.Shared.Body.Components;
+using Content.Shared.Chat;
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.Reagent;
+using Content.Shared.Damage;
+using Content.Shared.Damage.Components;
+using Content.Shared.Damage.Prototypes;
 using Content.Shared.FixedPoint;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.IdentityManagement;
@@ -18,6 +23,7 @@ using Content.Shared.Popups;
 using Content.Shared.Throwing;
 using Content.Shared.Weapons.Melee.Events;
 using Robust.Shared.Audio.Systems;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 
 namespace Content.Server._Lust.Weapons.Melee;
@@ -39,6 +45,8 @@ public sealed partial class DismemberingWeaponSystem : EntitySystem
     [Dependency] private StunSystem _stun = default!;
     [Dependency] private InventorySystem _inventory = default!;
     [Dependency] private MobStateSystem _mobState = default!;
+    [Dependency] private MobThresholdSystem _mobThreshold = default!;
+    [Dependency] private SharedSuicideSystem _suicide = default!;
 
     [Dependency] private EntityQuery<BodyComponent> _bodyQuery = default!;
     [Dependency] private EntityQuery<OrganComponent> _organQuery = default!;
@@ -64,7 +72,7 @@ public sealed partial class DismemberingWeaponSystem : EntitySystem
 
     private void OnMeleeHit(Entity<DismemberingWeaponComponent> ent, ref MeleeHitEvent args)
     {
-        if (args.HitEntities.Count == 0)
+        if (!args.IsHit || args.Handled || args.HitEntities.Count == 0)
             return;
 
         foreach (var hit in args.HitEntities)
@@ -187,8 +195,15 @@ public sealed partial class DismemberingWeaponSystem : EntitySystem
         // 4. Сочные брызги крови
         _audio.PlayPvs(weapon.Comp.DismemberSound, target);
 
+        ReagentId bloodReagent = new("Blood", null);
+        if (TryComp<BloodstreamComponent>(target, out var bloodstream) &&
+            bloodstream.BloodReferenceSolution.Contents.Count > 0)
+        {
+            bloodReagent = bloodstream.BloodReferenceSolution.Contents[0].Reagent;
+        }
+
         var blood = new Solution();
-        blood.AddReagent(new ReagentId("Blood", null), FixedPoint2.New(weapon.Comp.BloodAmount));
+        blood.AddReagent(bloodReagent, FixedPoint2.New(weapon.Comp.BloodAmount));
         _puddle.TrySpillAt(targetCoords, blood, out _);
 
         for (var i = 0; i < weapon.Comp.SplatterCount; i++)
@@ -196,7 +211,7 @@ public sealed partial class DismemberingWeaponSystem : EntitySystem
             var offset = _random.NextVector2(0.5f, 1.3f);
             var splashCoords = targetCoords.Offset(offset);
             var splash = new Solution();
-            splash.AddReagent(new ReagentId("Blood", null), FixedPoint2.New(8));
+            splash.AddReagent(bloodReagent, FixedPoint2.New(8));
             _puddle.TrySpillAt(splashCoords, splash, out _);
         }
 
@@ -216,8 +231,14 @@ public sealed partial class DismemberingWeaponSystem : EntitySystem
                 _inventory.TryUnequip(target, "ears", force: true, inventory: inv);
             }
 
-            // Мгновенная гибель при декапитации
-            if (TryComp<MobStateComponent>(target, out var mobState))
+            // Мгновенная гибель при декапитации: синхронизируем летальный урон и порог смерти
+            if (TryComp<DamageableComponent>(target, out var damageable))
+                _suicide.ApplyLethalDamage((target, damageable), new ProtoId<DamageTypePrototype>("Slash"));
+
+            if (TryComp<MobThresholdsComponent>(target, out var thresholds))
+                _mobThreshold.SetAllowRevives(target, false, thresholds);
+
+            if (TryComp<MobStateComponent>(target, out var mobState) && mobState.CurrentState != MobState.Dead)
                 _mobState.ChangeMobState(target, MobState.Dead, mobState);
 
             _popup.PopupEntity(Loc.GetString("dismember-head", ("target", targetName)), target);

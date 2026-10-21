@@ -135,7 +135,7 @@ public sealed partial class LimbSystem : SharedLimbSystem
 
         _sunriseBody.SetLayersVisibility(body.Owner, [layer], true);
 
-        // Sunrise added start - Возвращаем видимость волос и оверлеев при возвращении головы и конечностей
+        // Lust-Start - Возвращаем видимость волос и оверлеев при возвращении головы и конечностей
         if (layer == HumanoidVisualLayers.Head)
         {
             _sunriseBody.SetLayersVisibility(body.Owner, [
@@ -151,7 +151,7 @@ public sealed partial class LimbSystem : SharedLimbSystem
             _appearance.SetData(body.Owner, layer, false, appearance);
             _appearance.SetData(body.Owner, DamageVisualizerKeys.ForceUpdate, true, appearance);
         }
-        // Sunrise added end
+        // Lust-End
     }
 
     private void RemoveLimbVisual(Entity<HumanoidProfileComponent?> body, Entity<OrganComponent> limb)
@@ -161,7 +161,7 @@ public sealed partial class LimbSystem : SharedLimbSystem
 
         _sunriseBody.SetLayersVisibility(body.Owner, [layer], false);
 
-        // Sunrise added start - Скрываем волосы и слой крови/урона, чтобы не оставался призрак конечности
+        // Lust-Start - Скрываем волосы и слой крови/урона, чтобы не оставался призрак конечности
         if (layer == HumanoidVisualLayers.Head)
         {
             _sunriseBody.SetLayersVisibility(body.Owner, [
@@ -177,7 +177,7 @@ public sealed partial class LimbSystem : SharedLimbSystem
             _appearance.SetData(body.Owner, layer, true, appearance);
             _appearance.SetData(body.Owner, DamageVisualizerKeys.ForceUpdate, true, appearance);
         }
-        // Sunrise added end
+        // Lust-End
     }
 
     private bool TryFindBodyOrganByCategory(Entity<BodyComponent> body, string category, out EntityUid organ)
