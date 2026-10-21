@@ -1,0 +1,6 @@
+- type: soundCollection
+  id: KatanaHit
+  files:
+    - /Audio/_Lust/Weapons/Katana/katana_hit1.ogg
+    - /Audio/_Lust/Weapons/Katana/katana_hit2.ogg
+    - /Audio/_Lust/Weapons/Katana/katana_hit3.ogg

@@ -170,15 +170,6 @@ public abstract partial class SharedKatanaSystem : EntitySystem
             damageMultiplier *= comp.ComboBonusMultiplier;
             _popup.PopupPredicted(Loc.GetString("katana-combo-finisher"), args.User, args.User);
             _audio.PlayPredicted(comp.CleaveSound, katanaUid, args.User);
-
-            if (_net.IsServer)
-            {
-                foreach (var hit in args.HitEntities)
-                {
-                    var hitCoords = Transform(hit).Coordinates;
-                    Spawn(comp.SlashEffect, hitCoords);
-                }
-            }
         }
         else if (isDrawStrike)
         {
@@ -190,11 +181,14 @@ public abstract partial class SharedKatanaSystem : EntitySystem
         if (damageMultiplier > 1.0f)
             args.BonusDamage += args.BaseDamage * (damageMultiplier - 1.0f);
 
-        // Проверка отрубания конечностей (на сервере)
+        // Спавним анимированный визуальный эффект рассечения клинка и проверяем отрубание конечностей
         if (_net.IsServer)
         {
             foreach (var hit in args.HitEntities)
             {
+                var hitCoords = Transform(hit).Coordinates;
+                Spawn(isComboFinisher ? comp.CleaveEffect : comp.HitEffect, hitCoords);
+
                 if (_random.Prob(comp.DismemberChance))
                 {
                     var ev = new KatanaDismemberEvent(hit, args.User, katanaUid);
@@ -287,8 +281,8 @@ public abstract partial class SharedKatanaSystem : EntitySystem
         // На сервере наносим урон врагам в точке прибытия и спавним эффекты рассечения
         if (_net.IsServer)
         {
-            Spawn(ent.Comp.SlashEffect, startCoords);
-            Spawn(ent.Comp.SlashEffect, target);
+            Spawn(ent.Comp.DashEffect, startCoords);
+            Spawn(ent.Comp.DashEffect, target);
 
             var hitRadius = 1.6f;
             foreach (var nearby in _lookup.GetEntitiesInRange(target, hitRadius))
@@ -356,13 +350,8 @@ public abstract partial class SharedKatanaSystem : EntitySystem
 
         var userCoords = Transform(user).Coordinates;
 
-        // Спавним круговой вихрь из 4 взмахов клинка вокруг персонажа
-        var angles = new[] { Angle.Zero, Angle.FromDegrees(90), Angle.FromDegrees(180), Angle.FromDegrees(270) };
-        foreach (var rot in angles)
-        {
-            var slash = Spawn(ent.Comp.SlashEffect, userCoords);
-            _transform.SetWorldRotation(slash, rot);
-        }
+        // Спавним расширяющуюся круговую волну рассечения и сноп искр
+        Spawn(ent.Comp.CleaveEffect, userCoords);
 
         var enemies = _lookup.GetEntitiesInRange(userCoords, ent.Comp.CleaveRadius);
 
@@ -455,7 +444,7 @@ public abstract partial class SharedKatanaSystem : EntitySystem
             if (_net.IsServer)
             {
                 var userCoords = Transform(ent.Owner).Coordinates;
-                Spawn(katana.SlashEffect, userCoords);
+                Spawn(katana.ParryEffect, userCoords);
             }
         }
 

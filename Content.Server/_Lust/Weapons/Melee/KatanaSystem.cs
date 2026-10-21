@@ -102,6 +102,9 @@ public sealed partial class KatanaSystem : SharedKatanaSystem
 
         // Брызги и лужа крови
         var targetCoords = Transform(target).Coordinates;
+
+        // Кровавый кинетический эффект отсечения конечности
+        Spawn(katana.SeverEffect, targetCoords);
         var blood = new Solution();
         blood.AddReagent(new ReagentId("Blood", null), FixedPoint2.New(15));
         _puddle.TrySpillAt(targetCoords, blood, out _);

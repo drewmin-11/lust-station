@@ -1,0 +1,118 @@
+- type: entity
+  id: EffectKatanaSlash
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 0.35
+  - type: Sprite
+    drawdepth: Effects
+    layers:
+    - shader: unshaded
+      sprite: _Sunrise/Effects/sparks.rsi
+      state: sparks
+    - shader: unshaded
+      sprite: _Starlight/Effects/impact.rsi
+      state: impact
+  - type: PointLight
+    enabled: true
+    radius: 2.5
+    energy: 4.0
+    color: "#E0F7FA"
+  - type: Tag
+    tags:
+    - HideContextMenu
+
+- type: entity
+  id: EffectKatanaDash
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 0.4
+  - type: Sprite
+    drawdepth: Effects
+    layers:
+    - shader: unshaded
+      sprite: _Sunrise/Effects/teleports_effect.rsi
+      state: target
+    - shader: unshaded
+      sprite: _Sunrise/Effects/sparks.rsi
+      state: sparks
+  - type: PointLight
+    enabled: true
+    radius: 3.5
+    energy: 5.0
+    color: "#80DEEA"
+  - type: Tag
+    tags:
+    - HideContextMenu
+
+- type: entity
+  id: EffectKatanaCleave
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 0.45
+  - type: Sprite
+    drawdepth: Effects
+    layers:
+    - shader: unshaded
+      sprite: Effects/gravityPulse.rsi
+      state: gravityPulse
+    - shader: unshaded
+      sprite: _Sunrise/Effects/sparks.rsi
+      state: sparks
+  - type: PointLight
+    enabled: true
+    radius: 4.5
+    energy: 4.5
+    color: "#80D8FF"
+  - type: Tag
+    tags:
+    - HideContextMenu
+
+- type: entity
+  id: EffectKatanaParry
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 0.35
+  - type: Sprite
+    drawdepth: Effects
+    layers:
+    - shader: unshaded
+      sprite: _Starlight/Effects/armor_sparks.rsi
+      state: armor_sparks
+    - shader: unshaded
+      sprite: _Sunrise/Effects/sparks.rsi
+      state: sparks
+  - type: PointLight
+    enabled: true
+    radius: 3.0
+    energy: 5.0
+    color: "#FFF59D"
+  - type: Tag
+    tags:
+    - HideContextMenu
+
+- type: entity
+  id: EffectKatanaSever
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: TimedDespawn
+    lifetime: 0.45
+  - type: Sprite
+    drawdepth: Effects
+    layers:
+    - sprite: _Starlight/Effects/blood.rsi
+      state: splatter1
+    - shader: unshaded
+      sprite: _Starlight/Effects/impact.rsi
+      state: impact
+  - type: PointLight
+    enabled: true
+    radius: 2.5
+    energy: 4.0
+    color: "#D50000"
+  - type: Tag
+    tags:
+    - HideContextMenu

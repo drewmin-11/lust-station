@@ -120,10 +120,34 @@ public sealed partial class KatanaComponent : Component
     public SoundSpecifier CleaveSound = new SoundPathSpecifier("/Audio/_Lust/Weapons/Katana/katana_swing.ogg");
 
     /// <summary>
-    /// Прототип эффекта анимации рассечения.
+    /// Прототип эффекта попадания клинка.
     /// </summary>
     [DataField]
-    public EntProtoId SlashEffect = "WeaponArcSlash";
+    public EntProtoId HitEffect = "EffectKatanaSlash";
+
+    /// <summary>
+    /// Прототип эффекта рывка Иайдо.
+    /// </summary>
+    [DataField]
+    public EntProtoId DashEffect = "EffectKatanaDash";
+
+    /// <summary>
+    /// Прототип эффекта кругового удара 360°.
+    /// </summary>
+    [DataField]
+    public EntProtoId CleaveEffect = "EffectKatanaCleave";
+
+    /// <summary>
+    /// Прототип эффекта парирования.
+    /// </summary>
+    [DataField]
+    public EntProtoId ParryEffect = "EffectKatanaParry";
+
+    /// <summary>
+    /// Прототип эффекта отрубания конечности.
+    /// </summary>
+    [DataField]
+    public EntProtoId SeverEffect = "EffectKatanaSever";
 
     /// <summary>
     /// Прототип действия рывка Иайдо.

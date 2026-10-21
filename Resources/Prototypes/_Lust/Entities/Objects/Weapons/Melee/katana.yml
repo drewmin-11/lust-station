@@ -38,7 +38,10 @@
     soundSwing:
       path: /Audio/_Lust/Weapons/Katana/katana_swing.ogg
     soundHit:
-      path: /Audio/_Lust/Weapons/Katana/katana_slice.ogg
+      collection: KatanaHit
+      params:
+        volume: 2.0
+        variation: 0.08
   - type: Reflect
     reflects:
     - NonEnergy
