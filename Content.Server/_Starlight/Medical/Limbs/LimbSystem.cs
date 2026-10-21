@@ -3,7 +3,6 @@ using System.Reflection;
 using Content.Shared._Sunrise.Humanoid;
 using Content.Shared._Starlight.Medical.Limbs;
 using Content.Shared.Body;
-using Content.Shared.Damage;
 using Content.Shared.Humanoid;
 using Content.Shared.Starlight;
 using Content.Shared.Starlight.Medical.Surgery;
@@ -16,7 +15,6 @@ public sealed partial class LimbSystem : SharedLimbSystem
 {
     [Dependency] private ContainerSystem _containers = default!;
     [Dependency] private SunriseHumanoidBodySystem _sunriseBody = default!;
-    [Dependency] private SharedAppearanceSystem _appearance = default!;
 
     private static readonly MethodInfo? RaiseLocalEventRefMethod = typeof(LimbSystem)
         .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
@@ -135,23 +133,9 @@ public sealed partial class LimbSystem : SharedLimbSystem
 
         _sunriseBody.SetLayersVisibility(body.Owner, [layer], true);
 
-        // Lust-Start - Возвращаем видимость волос и оверлеев при возвращении головы и конечностей
-        if (layer == HumanoidVisualLayers.Head)
-        {
-            _sunriseBody.SetLayersVisibility(body.Owner, [
-                HumanoidVisualLayers.Hair,
-                HumanoidVisualLayers.FacialHair,
-                HumanoidVisualLayers.HeadTop,
-                HumanoidVisualLayers.HeadSide
-            ], true);
-        }
-
-        if (TryComp<AppearanceComponent>(body.Owner, out var appearance))
-        {
-            _appearance.SetData(body.Owner, layer, false, appearance);
-            _appearance.SetData(body.Owner, DamageVisualizerKeys.ForceUpdate, true, appearance);
-        }
-        // Lust-End
+        // Lust edit start - Восстанавливаем видимость волос и оверлеев при возвращении головы и конечностей
+        OnLimbVisualAddedLust(body, layer);
+        // Lust edit end
     }
 
     private void RemoveLimbVisual(Entity<HumanoidProfileComponent?> body, Entity<OrganComponent> limb)
@@ -161,23 +145,9 @@ public sealed partial class LimbSystem : SharedLimbSystem
 
         _sunriseBody.SetLayersVisibility(body.Owner, [layer], false);
 
-        // Lust-Start - Скрываем волосы и слой крови/урона, чтобы не оставался призрак конечности
-        if (layer == HumanoidVisualLayers.Head)
-        {
-            _sunriseBody.SetLayersVisibility(body.Owner, [
-                HumanoidVisualLayers.Hair,
-                HumanoidVisualLayers.FacialHair,
-                HumanoidVisualLayers.HeadTop,
-                HumanoidVisualLayers.HeadSide
-            ], false);
-        }
-
-        if (TryComp<AppearanceComponent>(body.Owner, out var appearance))
-        {
-            _appearance.SetData(body.Owner, layer, true, appearance);
-            _appearance.SetData(body.Owner, DamageVisualizerKeys.ForceUpdate, true, appearance);
-        }
-        // Lust-End
+        // Lust edit start - Скрываем волосы и слой крови/урона, чтобы не оставался призрак конечности
+        OnLimbVisualRemovedLust(body, layer);
+        // Lust edit end
     }
 
     private bool TryFindBodyOrganByCategory(Entity<BodyComponent> body, string category, out EntityUid organ)
